@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PhD Portfolio – Bubble Home</title>
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #FFE5D4; /* Warm peach */
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+  }
+  canvas {
+    display: block;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="bubbleCanvas"></canvas>
+
+<script>
+const canvas = document.getElementById("bubbleCanvas");
+const ctx = canvas.getContext("2d");
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// Adjust on resize
+window.addEventListener("resize", () => {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+});
+
+// Paler vivid colours
+const colours = [
+  {main:"#A294D6", text:"#8C77C7"},
+  {main:"#66C6F6", text:"#33B5F3"},
+  {main:"#A4D97E", text:"#85C95E"},
+  {main:"#F5C88D", text:"#F0B66A"},
+  {main:"#FF8AB5", text:"#FE669D"}
+];
+
+// Bubble object
+class Bubble {
+  constructor(x, y, r, colour, text, clickable=false, type="text") {
+    this.x = x;
+    this.y = y;
+    this.r = r;
+    this.colour = colour;
+    this.text = text;
+    this.clickable = clickable;
+    this.type = type; // text, image, research
+    this.dx = (Math.random()-0.5) * 2;
+    this.dy = (Math.random()-0.5) * 2;
+    this.image1 = null;
+    this.image2 = null;
+    this.showAltImage = false;
+    if (this.type === "image") {
+      this.image1 = new Image();
+      this.image1.src = "your-current-photo.jpg";
+      this.image2 = new Image();
+      this.image2.src = "your-childhood-photo.jpg";
+    }
+    if (this.type === "research") {
+      this.subQuestions = ["How can games teach better?", "What makes design educational?", "Can tech change classrooms?"];
+    }
+  }
+
+  draw(ctx) {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2, false);
+    ctx.fillStyle = this.colour.main;
+    ctx.fill();
+    ctx.closePath();
+
+    ctx.fillStyle = this.colour.text;
+    ctx.font = `${this.r/3}px Arial`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    if (this.type === "image") {
+      const img = this.showAltImage ? this.image2 : this.image1;
+      if (img.complete) {
+        ctx.save();
+        ctx.clip();
+        ctx.drawImage(img, this.x - this.r, this.y - this.r, this.r*2, this.r*2);
+        ctx.restore();
+      }
+    } else if (this.type === "research") {
+      ctx.fillText(this.text, this.x, this.y - this.r/2);
+      let angleStep = (Math.PI*2) / this.subQuestions.length;
+      this.subQuestions.forEach((q, i) => {
+        let angle = angleStep * i;
+        let subX = this.x + Math.cos(angle) * this.r/1.5;
+        let subY = this.y + Math.sin(angle) * this.r/1.5;
+        ctx.beginPath();
+        ctx.arc(subX, subY, this.r/4, 0, Math.PI*2);
+        ctx.fillStyle = this.colour.text;
+        ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = `${this.r/6}px Arial`;
+        ctx.fillText((i+1), subX, subY);
+      });
+    } else {
+      ctx.fillText(this.text, this.x, this.y);
+    }
+  }
+
+  update(mouse) {
+    // Move
+    this.x += this.dx;
+    this.y += this.dy;
+
+    // Bounce off edges
+    if (this.x + this.r > canvas.width || this.x - this.r < 0) this.dx *= -1;
+    if (this.y + this.r > canvas.height || this.y - this.r < 0) this.dy *= -1;
+
+    // Repel from mouse if not clickable
+    const dist = Math.hypot(this.x - mouse.x, this.y - mouse.y);
+    if (dist < 100 && !this.clickable) {
+      let angle = Math.atan2(this.y - mouse.y, this.x - mouse.x);
+      this.x += Math.cos(angle) * 3;
+      this.y += Math.sin(angle) * 3;
+    }
+  }
+}
+
+const bubbles = [
+  new Bubble(200, 200, 80, colours[0], "", true, "image"),
+  new Bubble(500, 300, 90, colours[1], "Education", true),
+  new Bubble(800, 200, 90, colours[2], "Experience", true),
+  new Bubble(400, 500, 100, colours[3], "Research", true, "research"),
+  new Bubble(700, 500, 100, colours[4], "Try Project", true)
+];
+
+// Mouse tracking
+const mouse = {x: undefined, y: undefined};
+canvas.addEventListener("mousemove", (e) => {
+  mouse.x = e.x;
+  mouse.y = e.y;
+});
+
+// Click events
+canvas.addEventListener("click", (e) => {
+  bubbles.forEach(b => {
+    const dist = Math.hypot(b.x - e.x, b.y - e.y);
+    if (dist < b.r) {
+      if (b.type === "image") {
+        b.showAltImage = !b.showAltImage;
+      } else if (b.text === "Try Project") {
+        window.location.href = "project.html"; // Unity project page
+      } else if (b.text === "Education") {
+        alert("MSc in X, BEng in Y, Interested in PhD Opportunities");
+      } else if (b.text === "Experience") {
+        alert("X years experience\nLanguages: Java, Python, C#, etc.");
+      } else if (b.type === "research") {
+        alert("Research Interests:\n" + b.subQuestions.join("\n"));
+      }
+    }
+  });
+});
+
+// Animation loop
+function animate() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  bubbles.forEach(b => {
+    b.update(mouse);
+    b.draw(ctx);
+  });
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
