@@ -8,14 +8,14 @@
   html, body {
     margin: 0;
     padding: 0;
-    background-color: #fff7f5; /* Almost white, soft peach-pink */
+    background-color: #fff7f5; /* Soft peach-pink near white */
     overflow: hidden;
     font-family: "Courier New", monospace;
   }
   canvas {
     display: block;
+    cursor: default;
   }
-  /* Fixed header */
   header {
     position: fixed;
     top: 0;
@@ -58,7 +58,6 @@ window.addEventListener("resize", () => {
   adjustBubbleSizes();
 });
 
-// Slightly more vibrant palette (paler than original, but not pastel)
 const colours = [
   {main:"#9786D8", text:"#6b57c0"}, // Purple
   {main:"#6ECBF8", text:"#009be8"}, // Blue
@@ -68,134 +67,160 @@ const colours = [
 ];
 
 class Bubble {
-  constructor(x, y, r, colour, text, clickable=false, type="text") {
+  constructor(x, y, r, colour, heading, content, clickable=false, type="text") {
     this.x = x;
     this.y = y;
     this.r = r;
     this.baseR = r;
     this.colour = colour;
-    this.text = text;
+    this.heading = heading;
+    this.content = content;
     this.clickable = clickable;
     this.type = type;
-    this.dx = (Math.random()-0.5) * 1.5;
-    this.dy = (Math.random()-0.5) * 1.5;
+    this.dx = (Math.random()-0.5) * 2;
+    this.dy = (Math.random()-0.5) * 2;
+    this.hover = false;
+
     if (this.type === "image") {
       this.image1 = new Image();
       this.image1.src = "IMG_9361.png";
       this.image2 = new Image();
       this.image2.src = "IMG_5766_Original.jpg";
-      this.showAltImage = false;
     }
     if (this.type === "research") {
-      this.subQuestions = [
-        "How can games teach better?",
-        "What makes design educational?",
-        "Can tech change classrooms?"
+      this.subBubbles = [
+        new Bubble(0, 0, normalBubbleSize, colours[0], "Design", "How can games teach better?"),
+        new Bubble(0, 0, normalBubbleSize, colours[1], "Education", "What makes design educational?"),
+        new Bubble(0, 0, normalBubbleSize, colours[2], "Technology", "Can tech change classrooms?")
       ];
     }
   }
 
   draw(ctx) {
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2, false);
+    ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
     ctx.fillStyle = this.colour.main;
     ctx.fill();
     ctx.closePath();
 
+    // Heading text
     ctx.fillStyle = this.colour.text;
     ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    ctx.font = `${this.r/3}px "Courier New", monospace`;
-
-    if (this.type === "image") {
-      const img = this.showAltImage ? this.image2 : this.image1;
-      if (img.complete) {
-        ctx.save();
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
-        ctx.closePath();
-        ctx.clip();
-        ctx.drawImage(img, this.x - this.r, this.y - this.r, this.r*2, this.r*2);
-        ctx.restore();
-      }
-    } else if (this.type === "research") {
-      ctx.fillText(this.text, this.x, this.y - this.r/1.5);
-      let angleStep = (Math.PI*2) / this.subQuestions.length;
-      this.subQuestions.forEach((q, i) => {
-        let angle = angleStep * i;
-        let subX = this.x + Math.cos(angle) * this.r/1.5;
-        let subY = this.y + Math.sin(angle) * this.r/1.5;
-        ctx.beginPath();
-        ctx.arc(subX, subY, normalBubbleSize, 0, Math.PI*2);
-        ctx.fillStyle = colours[i % colours.length].main;
-        ctx.fill();
-        ctx.fillStyle = colours[i % colours.length].text;
-        ctx.font = `${normalBubbleSize/3}px "Courier New", monospace`;
-        ctx.fillText(i+1, subX, subY);
-      });
+    ctx.font = `bold ${this.r/4}px "Courier New", monospace`;
+    if (this.clickable) {
+      ctx.shadowColor = "#fff";
+      ctx.shadowOffsetX = 1;
+      ctx.shadowOffsetY = 1;
+      ctx.shadowBlur = 0;
     } else {
-      ctx.fillText(this.text, this.x, this.y);
+      ctx.shadowColor = "transparent";
+    }
+    ctx.fillText(this.heading, this.x, this.y - this.r/2);
+
+    ctx.shadowColor = "transparent";
+    ctx.font = `${this.r/6}px "Courier New", monospace`;
+    ctx.fillText(this.content, this.x, this.y);
+
+    // If research bubble, draw sub-bubbles inside
+    if (this.type === "research") {
+      const angleStep = (Math.PI*2) / this.subBubbles.length;
+      const radiusForSubs = this.r * 0.6;
+      this.subBubbles.forEach((sb, i) => {
+        let angle = angleStep * i;
+        sb.x = this.x + Math.cos(angle) * radiusForSubs;
+        sb.y = this.y + Math.sin(angle) * radiusForSubs;
+        sb.draw(ctx);
+      });
+    }
+
+    // If image bubble, swap image on hover
+    if (this.type === "image") {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.r, 0, Math.PI*2);
+      ctx.closePath();
+      ctx.clip();
+      let img = this.hover ? this.image2 : this.image1;
+      if (img.complete) {
+        ctx.drawImage(img, this.x - this.r, this.y - this.r, this.r*2, this.r*2);
+      }
+      ctx.restore();
     }
   }
 
-  update(mouse) {
+  update(bubbles) {
     this.x += this.dx;
     this.y += this.dy;
 
+    // Wall bounce
     if (this.x + this.r > canvas.width || this.x - this.r < 0) this.dx *= -1;
     if (this.y + this.r > canvas.height || this.y - this.r < 0) this.dy *= -1;
 
-    const dist = Math.hypot(this.x - mouse.x, this.y - mouse.y);
-    if (dist < this.r + 50 && !this.clickable) {
-      let angle = Math.atan2(this.y - mouse.y, this.x - mouse.x);
-      this.x += Math.cos(angle) * 2;
-      this.y += Math.sin(angle) * 2;
-    }
+    // Bubble-bubble collisions
+    bubbles.forEach(other => {
+      if (this === other) return;
+      const dist = Math.hypot(this.x - other.x, this.y - other.y);
+      const minDist = this.r + other.r;
+      if (dist < minDist) {
+        const angle = Math.atan2(this.y - other.y, this.x - other.x);
+        const overlap = minDist - dist;
+        this.x += Math.cos(angle) * overlap/2;
+        this.y += Math.sin(angle) * overlap/2;
+        other.x -= Math.cos(angle) * overlap/2;
+        other.y -= Math.sin(angle) * overlap/2;
+
+        const tmpDx = this.dx;
+        const tmpDy = this.dy;
+        this.dx = other.dx;
+        this.dy = other.dy;
+        other.dx = tmpDx;
+        other.dy = tmpDy;
+      }
+    });
   }
 }
 
 let normalBubbleSize;
 let researchBubbleSize;
 function adjustBubbleSizes() {
-  normalBubbleSize = Math.min(canvas.width, canvas.height) / 8; // Bigger
-  researchBubbleSize = normalBubbleSize * 1.5; // Research bubble much larger
+  normalBubbleSize = Math.min(canvas.width, canvas.height) / 7;
+  researchBubbleSize = normalBubbleSize * 2; // Enough space for sub-bubbles
 }
 adjustBubbleSizes();
 
+// Start in random positions
+function randPos(r) {
+  return Math.random() * (canvas.width - 2*r) + r;
+}
+
 const bubbles = [
-  new Bubble(200, 200, normalBubbleSize, colours[0], "", true, "image"),
-  new Bubble(500, 300, normalBubbleSize, colours[1], "Education", true),
-  new Bubble(800, 200, normalBubbleSize, colours[2], "Experience", true),
-  new Bubble(400, 500, researchBubbleSize, colours[3], "Research", true, "research"),
-  new Bubble(700, 500, normalBubbleSize, colours[4], "Try Project", true)
+  new Bubble(randPos(normalBubbleSize), randPos(normalBubbleSize), normalBubbleSize, colours[0], "Me", "PhD Student", true, "image"),
+  new Bubble(randPos(normalBubbleSize), randPos(normalBubbleSize), normalBubbleSize, colours[1], "Education", "MSc in X\nBEng in Y"),
+  new Bubble(randPos(normalBubbleSize), randPos(normalBubbleSize), normalBubbleSize, colours[2], "Experience", "X years\nJava, Python, C#"),
+  new Bubble(randPos(researchBubbleSize), randPos(researchBubbleSize), researchBubbleSize, colours[3], "Research", "", false, "research"),
+  new Bubble(randPos(normalBubbleSize), randPos(normalBubbleSize), normalBubbleSize, colours[4], "Try Project", "Play my thesis game", true)
 ];
 
-const mouse = {x: -9999, y: -9999};
 canvas.addEventListener("mousemove", e => {
-  mouse.x = e.x;
-  mouse.y = e.y;
-});
-canvas.addEventListener("touchmove", e => {
-  if (e.touches.length > 0) {
-    mouse.x = e.touches[0].clientX;
-    mouse.y = e.touches[0].clientY;
-  }
+  let hoveringClickable = false;
+  bubbles.forEach(b => {
+    const dist = Math.hypot(b.x - e.x, b.y - e.y);
+    if (dist < b.r) {
+      if (b.clickable) hoveringClickable = true;
+      if (b.type === "image") b.hover = true;
+    } else {
+      if (b.type === "image") b.hover = false;
+    }
+  });
+  canvas.style.cursor = hoveringClickable ? "pointer" : "default";
 });
 
 canvas.addEventListener("click", e => {
   bubbles.forEach(b => {
     const dist = Math.hypot(b.x - e.x, b.y - e.y);
-    if (dist < b.r) {
-      if (b.type === "image") {
-        b.showAltImage = !b.showAltImage;
-      } else if (b.text === "Try Project") {
+    if (dist < b.r && b.clickable) {
+      if (b.heading === "Try Project") {
         window.location.href = "project.html";
-      } else if (b.text === "Education") {
-        alert("MSc in X, BEng in Y, Interested in PhD Opportunities");
-      } else if (b.text === "Experience") {
-        alert("X years experience\nLanguages: Java, Python, C#, etc.");
-      } else if (b.type === "research") {
-        alert("Research:\n" + b.subQuestions.join("\n"));
       }
     }
   });
@@ -204,7 +229,7 @@ canvas.addEventListener("click", e => {
 function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   bubbles.forEach(b => {
-    b.update(mouse);
+    b.update(bubbles);
     b.draw(ctx);
   });
   requestAnimationFrame(animate);
