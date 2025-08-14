@@ -4,81 +4,72 @@
 <meta charset="UTF-8" />
 <title>Bubble Home</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<!-- Matter.js -->
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
   :root{
-    /* palette: slightly paler, a bit more vibrant than before */
-    --purple:#9b8ae0;  --purple-text:#6b57c0;
-    --blue:#74cef9;    --blue-text:#008fe0;
-    --green:#b8e68f;   --green-text:#4da623;
-    --orange:#f8d79f;  --orange-text:#c6831f;
-    --pink:#ff9fc6;    --pink-text:#ff2e76;
-
-    --bg:#fff5f1; /* tiny bit warmer near-white */
+    /* palette: slightly paler but vivid */
+    --purple:#9b8ae0;   --purple-text:#6b57c0;
+    --blue:#74cef9;     --blue-text:#008fe0;
+    --green:#b8e68f;    --green-text:#4da623;
+    --orange:#f8d79f;   --orange-text:#c6831f;
+    --pink:#ff9fc6;     --pink-text:#ff2e76;
+    --bg:#fff4f0; /* warmer near-white */
   }
   html,body{
     height:100%;
     margin:0;
     background:var(--bg);
     font-family:"Courier New", monospace;
-    overflow:hidden; /* we keep everything inside the physics world */
+    overflow:hidden;
   }
 
-  /* Fixed header (persists across navigation) */
+  /* Fixed header */
   header{
-    position:fixed; inset:0 0 auto 0; height:56px;
+    position:fixed; inset:0 0 auto 0; height:58px;
     display:flex; align-items:center; justify-content:space-between;
     padding:0 16px; z-index:1000; background:transparent;
-    pointer-events:none; /* let bubbles pass under; links still clickable via inner pointer */
+    pointer-events:none;
   }
   header h1{
-    margin:0; font-size:clamp(18px, 2.2vw, 28px); font-weight:700; color:#222;
+    margin:0; font-size:clamp(18px, 2.6vw, 32px); font-weight:700; color:#222;
     pointer-events:auto;
   }
   header a{
     pointer-events:auto;
     font-weight:700; text-decoration:none; color:#1a73e8; /* blue to denote link */
-    font-size:clamp(14px, 1.8vw, 20px);
+    font-size:clamp(14px, 2vw, 22px);
   }
 
-  /* Bubble host for absolutely-positioned elements */
+  /* Stage for DOM bubbles */
   #bubble-stage{ position:fixed; inset:0; }
 
-  /* Generic bubble styling (DOM-driven, not canvas) */
+  /* Generic bubble styling */
   .bubble{
     position:absolute; transform:translate(-50%,-50%);
     display:flex; align-items:center; justify-content:center; text-align:center;
     border-radius:50%;
     border:1px solid rgba(0,0,0,0.08);
-    box-shadow:0 4px 14px rgba(0,0,0,0.06);
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
     overflow:hidden;
     transition:box-shadow .2s ease, filter .2s ease;
   }
   .bubble.clickable{ cursor:pointer; }
-  .bubble.clickable .heading text{ filter:drop-shadow(1px 1px 0 #fff); } /* “indent” effect */
-  .bubble.clickable .content{ text-shadow: 0 1px 0 rgba(255,255,255,0.65); }
-
-  /* Bubble inner layout */
-  .bubble-inner{
-    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    padding:10%; /* minimal but reasonable border */
+  .bubble.clickable .heading text{
+    filter:drop-shadow(1px 1px 0 #fff); /* “indent” hint */
   }
+  .bubble.clickable .content{ text-shadow:0 1px 0 rgba(255,255,255,0.7); }
+
+  .bubble-inner{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:10%; }
   .content{
-    line-height:1.25; white-space:pre-wrap; word-break:break-word;
+    line-height:1.2; white-space:pre-wrap; word-break:break-word;
     max-width:76%;
-    color:#222;
-    font-size:clamp(12px, 1.4vw, 18px);
+    color:#1a1a1a;
+    font-size:clamp(12px, 1.6vw, 20px);
   }
 
-  /* Arched heading using SVG-on-top */
-  .heading{
-    position:absolute; inset:0; pointer-events:none;
-  }
-  .heading text{
-    font-weight:700;
-    letter-spacing:.02em;
-  }
+  /* Arched heading via SVG at top; color classes drive fill */
+  .heading{ position:absolute; inset:0; pointer-events:none; }
+  .heading text{ font-weight:700; letter-spacing:.02em; }
 
   /* Image bubble (non-clickable), hover to swap */
   .image-fill{
@@ -90,37 +81,38 @@
   .bubble.image:hover .image-fill.child{ opacity:1; }
   .bubble.image:hover .image-fill.current{ opacity:0; }
 
-  /* Research container holds three topic bubbles */
+  /* Research container visuals */
   .research-container{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-    pointer-events:none; /* only inner bubbles handle clicks if needed later */
+    pointer-events:none;
   }
   .research-grid{
     position:relative; width:80%; height:80%;
-    display:grid; grid-template-columns:repeat(3,1fr); grid-gap:4%;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:4%;
     pointer-events:none;
   }
   .research-grid .mini{
     pointer-events:auto;
-    border-radius:50%; display:flex; align-items:center; justify-content:center;
+    border-radius:50%;
     border:1px solid rgba(0,0,0,0.08);
     box-shadow:0 2px 10px rgba(0,0,0,0.05);
     padding:8%;
     text-align:center;
-    font-size:clamp(11px, 1.2vw, 16px);
+    font-size:clamp(11px, 1.3vw, 16px);
     color:#1a1a1a;
+    display:flex; align-items:center; justify-content:center;
+    aspect-ratio:1 / 1; /* ensures circle, not oval */
   }
 
-  /* Utility color classes */
-  .c-purple{background:var(--purple);} .t-purple{color:var(--purple-text);}
-  .c-blue{background:var(--blue);}   .t-blue{color:var(--blue-text);}
-  .c-green{background:var(--green);} .t-green{color:var(--green-text);}
-  .c-orange{background:var(--orange);} .t-orange{color:var(--orange-text);}
-  .c-pink{background:var(--pink);}   .t-pink{color:var(--pink-text);}
+  /* Color utility classes - set both color & fill (for SVG text) */
+  .c-purple{background:var(--purple);} .t-purple{color:var(--purple-text); fill:var(--purple-text);}
+  .c-blue{background:var(--blue);}     .t-blue{color:var(--blue-text);     fill:var(--blue-text);}
+  .c-green{background:var(--green);}   .t-green{color:var(--green-text);   fill:var(--green-text);}
+  .c-orange{background:var(--orange);} .t-orange{color:var(--orange-text); fill:var(--orange-text);}
+  .c-pink{background:var(--pink);}     .t-pink{color:var(--pink-text);     fill:var(--pink-text);}
 
-  /* Resize reaction: slightly larger header text on substantial resizes (handled in JS too) */
   @media (max-width: 640px){
-    .content{ max-width:84%; }
+    .content{ max-width:86%; font-size:clamp(12px, 3.6vw, 18px); }
   }
 </style>
 </head>
@@ -135,31 +127,32 @@
 
 <script>
 /* ===== Physics + DOM bubbles ===== */
-const { Engine, Render, Runner, World, Bodies, Body, Composite, Events } = Matter;
+const { Engine, Runner, World, Bodies, Body, Events } = Matter;
 
 const stage = document.getElementById('bubble-stage');
 let engine, runner, walls = [];
-let domBubbles = []; // {el, body, radius}
+let domBubbles = []; // {el, body, r}
+let mousePos = { x: innerWidth/2, y: innerHeight/2 };
 
 function vw(){ return Math.max(document.documentElement.clientWidth, window.innerWidth || 0); }
 function vh(){ return Math.max(document.documentElement.clientHeight, window.innerHeight || 0); }
 
-/* Sizes: bigger bubbles, scale to window */
+/* Bigger sizes that scale with the window */
 function getSizes(){
   const minSide = Math.min(vw(), vh());
-  const normalR   = Math.max(70, Math.floor(minSide * 0.12));   // normal bubble radius
-  const largeR    = Math.floor(normalR * 2.1);                  // research container big enough
-  const imageR    = Math.floor(normalR * 1.2);
+  const normalR = Math.max(85, Math.floor(minSide * 0.17));  // larger normal bubbles
+  const largeR  = Math.floor(normalR * 2.4);                 // big research bubble
+  const imageR  = Math.floor(normalR * 1.35);                // image bubble slightly larger
   return { normalR, largeR, imageR };
 }
 
-/* Create a single bubble DOM + physics body */
+/* Create a bubble: DOM + physics */
 function makeBubble({x, y, r, colorClass, textColorClass, heading, content, clickable=false, type='text', images=null, id=null}){
   const el = document.createElement('div');
   el.className = `bubble ${colorClass} ${clickable?'clickable':''} ${type==='image'?'image':''}`;
   el.style.width = `${r*2}px`; el.style.height = `${r*2}px`;
 
-  // Heading (arched) via SVG
+  /* Heading (arched) via SVG */
   const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
   svg.setAttribute('class','heading');
   svg.setAttribute('viewBox','0 0 100 100');
@@ -167,22 +160,21 @@ function makeBubble({x, y, r, colorClass, textColorClass, heading, content, clic
   const path = document.createElementNS("http://www.w3.org/2000/svg","path");
   const pathId = `arc-${Math.random().toString(36).slice(2)}`;
   path.setAttribute('id', pathId);
-  // Semi-circle arc across top
-  path.setAttribute('d','M10,60 A40,40 0 0,1 90,60');
+  path.setAttribute('d','M10,60 A40,40 0 0,1 90,60'); // arc across top
   defs.appendChild(path);
   svg.appendChild(defs);
   const text = document.createElementNS("http://www.w3.org/2000/svg","text");
   text.setAttribute('class', textColorClass);
-  text.setAttribute('style','font-size:10px;');
   const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
   textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
   textPath.setAttribute('startOffset','50%');
   textPath.setAttribute('text-anchor','middle');
   textPath.textContent = heading || '';
-  text.appendChild(textPath); svg.appendChild(text);
+  text.appendChild(textPath);
+  svg.appendChild(text);
   el.appendChild(svg);
 
-  // Main content
+  /* Main content */
   const inner = document.createElement('div');
   inner.className = 'bubble-inner';
   const contentBox = document.createElement('div');
@@ -191,7 +183,7 @@ function makeBubble({x, y, r, colorClass, textColorClass, heading, content, clic
   inner.appendChild(contentBox);
   el.appendChild(inner);
 
-  // Image fills (non-clickable, hover swap)
+  /* Image fills (non-clickable, hover swap) */
   if(type==='image' && images){
     const current = document.createElement('div');
     current.className='image-fill current';
@@ -202,15 +194,14 @@ function makeBubble({x, y, r, colorClass, textColorClass, heading, content, clic
     el.appendChild(current); el.appendChild(child);
   }
 
-  // Research topics inside big bubble
+  /* Research topics (visual only) */
   if(type==='research'){
     const rc = document.createElement('div'); rc.className='research-container';
     const grid = document.createElement('div'); grid.className='research-grid';
-    // three topic bubbles
     const topics = [
       { text:"User-Centric Design:\nWhy can't we make user experience fun without losing functionality or efficiency?\nI.e. make applications which we have to use, fun to use", cls:'c-purple t-purple' },
-      { text:"Education:\nHow is the learning experience evolving with technological advances and society?\nWhere is the right balance between tech as support vs. dependency?", cls:'c-blue t-blue' },
-      { text:"Social Good:\nHow can we create a more tech-literate society?\nHow can we enable the public to make informed decisions on tech policy?", cls:'c-green t-green' }
+      { text:"Education:\nHow is the learning experience evolving with technological advances and society?\nIn the learning process, where is the right balance between technology being supportive and not a critical dependence?", cls:'c-blue t-blue' },
+      { text:"Social Good:\nHow can we create a more tech-literate society?\nHow can we enable the general public to make informed decisions on tech related public policy?", cls:'c-green t-green' }
     ];
     topics.forEach(t=>{
       const mini = document.createElement('div');
@@ -221,56 +212,57 @@ function makeBubble({x, y, r, colorClass, textColorClass, heading, content, clic
     rc.appendChild(grid); el.appendChild(rc);
   }
 
-  // Click behavior
+  /* Click behavior */
   if(clickable){
     el.addEventListener('click', ()=>{
       if(id==='try'){
-        window.location.href = 'project.html'; // replace with your page that embeds Unity
+        window.location.href = 'project.html'; // same tab
       }
     });
   }
 
-  // Append to stage
   stage.appendChild(el);
 
-  // Physics body
+  /* Physics body */
   const body = Bodies.circle(x, y, r, {
-    restitution: 0.85,
-    frictionAir: 0.015,
+    restitution: 0.98,
+    frictionAir: 0.012,
     friction: 0.0001,
     frictionStatic: 0.0001
   });
   World.add(engine.world, body);
 
-  // Track
-  domBubbles.push({ el, body, r });
+  /* Store & return */
+  const rec = { el, body, r };
+  domBubbles.push(rec);
+  return rec;
 }
 
 /* Build world */
 function buildWorld(){
-  // Clean up if exists
-  if(engine){ World.clear(engine.world, false); engine = null; }
+  if(engine){ Matter.World.clear(engine.world, false); engine = null; }
   stage.innerHTML = ''; domBubbles = [];
 
   engine = Engine.create();
+  engine.world.gravity.x = 0;
+  engine.world.gravity.y = 0;
 
-  // Static walls (keep inside window)
-  const w = vw(), h = vh(), thickness = 1000;
-  walls = [
-    Bodies.rectangle(w/2, -thickness/2, w+thickness*2, thickness, {isStatic:true}),
-    Bodies.rectangle(w/2, h+thickness/2, w+thickness*2, thickness, {isStatic:true}),
-    Bodies.rectangle(-thickness/2, h/2, thickness, h+thickness*2, {isStatic:true}),
-    Bodies.rectangle(w+thickness/2, h/2, thickness, h+thickness*2, {isStatic:true}),
+  /* Walls hugging window edges */
+  const w = vw(), h = vh(), thick = 200;
+  const walls = [
+    Bodies.rectangle(w/2, -thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(w/2, h+thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(-thick/2, h/2, thick, h+thick*2, { isStatic:true }),
+    Bodies.rectangle(w+thick/2, h/2, thick, h+thick*2, { isStatic:true })
   ];
   World.add(engine.world, walls);
 
   const { normalR, largeR, imageR } = getSizes();
 
-  // Random helper within window bounds
   const rx = (r)=> Math.random()*(vw()-2*r)+r;
   const ry = (r)=> Math.random()*(vh()-2*r)+r;
 
-  // Bubbles
+  /* Bubbles */
   // Image (non-clickable, hover swap)
   makeBubble({
     x: rx(imageR), y: ry(imageR), r: imageR,
@@ -279,10 +271,10 @@ function buildWorld(){
     content:'PhD Student / Designer',
     clickable:false,
     type:'image',
-    images:{ current:'your-current-photo.jpg', child:'your-childhood-photo.jpg' }
+    images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }
   });
 
-  // Education (degrees list)
+  // Education bubble (degrees list)
   makeBubble({
     x: rx(normalR), y: ry(normalR), r: normalR,
     colorClass:'c-blue', textColorClass:'t-blue',
@@ -291,7 +283,7 @@ function buildWorld(){
     clickable:false
   });
 
-  // Education #2 (different colour) — e.g., courses/awards or simply “PhD interests”
+  // Second education-ish bubble (different color)
   makeBubble({
     x: rx(normalR), y: ry(normalR), r: normalR,
     colorClass:'c-purple', textColorClass:'t-purple',
@@ -305,32 +297,41 @@ function buildWorld(){
     x: rx(normalR), y: ry(normalR), r: normalR,
     colorClass:'c-green', textColorClass:'t-green',
     heading:'Experience',
-    content:'X+ years industry & research\nJava • Python • C# • JS\nUnity • Git • UX',
+    content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#',
     clickable:false
   });
 
-  // Research (BIG) with topics inside
+  // Big Research bubble (visual children)
   makeBubble({
     x: rx(largeR), y: ry(largeR), r: largeR,
     colorClass:'c-orange', textColorClass:'t-orange',
     heading:'Technology Research Interests',
-    content:'', clickable:false, type:'research'
+    content:'',
+    clickable:false, type:'research'
   });
 
-  // Try Project (clickable)
+  // Try project (clickable)
   makeBubble({
     x: rx(normalR), y: ry(normalR), r: normalR,
     colorClass:'c-pink', textColorClass:'t-pink',
-    heading:'Try Project',
+    heading:'Try My Thesis Project →',
     content:'Play my dissertation game',
     clickable:true, id:'try'
   });
 
-  // Runner
+  /* Runner and DOM sync */
+  if(runner) Matter.Runner.stop(runner);
   runner = Runner.create();
   Runner.run(runner, engine);
 
-  // Sync DOM to physics each tick
+  // Initial drift
+  setTimeout(()=>{
+    domBubbles.forEach(({body})=>{
+      Body.setVelocity(body, {x:(Math.random()-0.5)*1.6, y:(Math.random()-0.5)*1.6});
+    });
+  }, 50);
+
+  // Keep DOM aligned with bodies
   Events.on(engine, 'afterUpdate', ()=>{
     domBubbles.forEach(({el, body, r})=>{
       el.style.left = body.position.x + 'px';
@@ -338,36 +339,35 @@ function buildWorld(){
       el.style.width = (r*2)+'px';
       el.style.height= (r*2)+'px';
 
-      // Scale heading text relative to size
-      const textEls = el.querySelectorAll('.heading text');
-      textEls.forEach(t=> t.style.fontSize = Math.max(10, Math.floor(r*0.18)) + 'px');
+      // Scale heading font to radius
+      const headTexts = el.querySelectorAll('.heading text');
+      headTexts.forEach(t => t.style.fontSize = Math.max(10, Math.floor(r*0.18)) + 'px');
 
-      // Scale content font slightly with radius
+      // Scale content font slightly with size
       const content = el.querySelector('.content');
       if(content){ content.style.fontSize = Math.max(12, Math.floor(r*0.17)) + 'px'; }
     });
   });
-
-  // Gentle random initial nudge so nothing is static
-  setTimeout(()=>{
-    domBubbles.forEach(({body})=>{
-      Body.setVelocity(body, {x:(Math.random()-0.5)*2, y:(Math.random()-0.5)*2});
-      Body.setAngularVelocity(body, 0); // keep upright feel
-    });
-  }, 50);
 }
 
-/* Handle resize: rebuild world & make header a bit bigger */
+/* Mouse move: small “energy” kick toward current velocity direction */
+window.addEventListener('mousemove', (e)=>{
+  mousePos.x = e.clientX; mousePos.y = e.clientY;
+  domBubbles.forEach(({body})=>{
+    const boost = 0.0005; // tiny impulse
+    Body.applyForce(body, body.position, {x:(Math.random()-0.5)*boost, y:(Math.random()-0.5)*boost});
+  });
+});
+
+/* Handle resize: rebuild world & keep header styles */
 let resizeTimer;
 window.addEventListener('resize', ()=>{
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(()=>{
     buildWorld();
-    // Header tweaks on resize
-    const hdrTitle = document.getElementById('hdrTitle');
-    hdrTitle.style.fontSize = 'clamp(20px, 2.6vw, 32px)';
-    const hdrLink = document.getElementById('hdrLink');
-    hdrLink.style.color = '#1a73e8'; // explicit blue on resize too
+    // header emphasis on resize
+    document.getElementById('hdrTitle').style.fontSize = 'clamp(20px, 2.8vw, 34px)';
+    document.getElementById('hdrLink').style.color = '#1a73e8';
   }, 150);
 });
 
