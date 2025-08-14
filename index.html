@@ -1,238 +1,369 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Portfolio</title>
+<meta charset="UTF-8" />
+<title>Portfolio Bubbles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
-    body {
-        margin: 0;
-        font-family: 'Courier New', monospace;
-        background-color: #fff9f7; /* warm near-white peach */
-        overflow: hidden;
-    }
-    header {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        display: flex;
-        justify-content: space-between;
-        padding: 10px 20px;
-        background: transparent;
-        z-index: 10;
-        font-size: 1.2em;
-    }
-    header a {
-        color: #0066cc;
-        text-decoration: none;
-    }
-    canvas {
-        display: block;
-    }
-    .pulse {
-        animation: pulse 3s infinite ease-in-out;
-    }
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
+  :root{
+    /* palette: slightly paler, still vivid */
+    --purple:#9b8ae0;   --purple-text:#5d46bf;
+    --blue:#74cef9;     --blue-text:#007ed6;
+    --green:#b8e68f;    --green-text:#3f9b1b;
+    --orange:#f8d79f;   --orange-text:#b66f11;
+    --pink:#ff9fc6;     --pink-text:#ff1668;
+
+    --bg:#fff4f1; /* warmer near-white */
+  }
+  html,body{
+    margin:0; height:100%;
+    background:var(--bg);
+    font-family:"Courier New", monospace;
+    overflow:hidden;
+  }
+
+  /* Fixed header */
+  header{
+    position:fixed; inset:0 0 auto 0; height:58px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0 16px; z-index:1000; background:transparent;
+    pointer-events:none;
+  }
+  header h1{
+    margin:0; font-size:clamp(18px, 2.4vw, 28px); font-weight:700; color:#222;
+    pointer-events:auto;
+  }
+  header a{
+    pointer-events:auto;
+    color:#1a73e8; font-weight:700; text-decoration:none;
+    font-size:clamp(14px, 1.8vw, 20px);
+  }
+
+  /* Stage for DOM bubbles */
+  #bubble-stage{ position:fixed; inset:0; }
+
+  /* Bubble container (positioning only) */
+  .bubble{
+    position:absolute; transform:translate(-50%,-50%);
+    width:100px; height:100px; /* will be overridden dynamically */
+  }
+
+  /* Visual circle inside bubble (for pulse without breaking translate) */
+  .scaleWrap{
+    position:absolute; inset:0;
+    border-radius:50%;
+    overflow:hidden;
+    border:1px solid rgba(0,0,0,0.08);
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    transition:box-shadow .2s ease, filter .2s ease, opacity .25s ease;
+  }
+  .bubble.clickable{ cursor:pointer; }
+  .bubble.pulse .scaleWrap{ animation:pulse 4s ease-in-out infinite; }
+  @keyframes pulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.05);} }
+
+  .bubble-inner{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:10%; }
+  .content{
+    line-height:1.25; white-space:pre-wrap; word-break:break-word;
+    max-width:78%; color:#1a1a1a;
+    font-size:14px; /* will be resized dynamically */
+  }
+
+  /* Arched heading via SVG */
+  .heading{ position:absolute; inset:0; pointer-events:none; }
+  .heading text{ font-weight:700; letter-spacing:.02em; }
+
+  /* Image bubble hover fade */
+  .image-fill{
+    position:absolute; inset:0; background-size:cover; background-position:center;
+    transition:opacity .3s ease;
+  }
+  .image-fill.child{ opacity:0; }
+  .bubble.image:hover .image-fill.child{ opacity:1; }
+  .bubble.image:hover .image-fill.current{ opacity:0; }
+
+  /* Color utilities (apply to bubble for scoping) */
+  .c-purple .scaleWrap{ background:var(--purple); } .t-purple .heading text{ fill:var(--purple-text); }
+  .c-blue   .scaleWrap{ background:var(--blue);   } .t-blue   .heading text{ fill:var(--blue-text); }
+  .c-green  .scaleWrap{ background:var(--green);  } .t-green  .heading text{ fill:var(--green-text); }
+  .c-orange .scaleWrap{ background:var(--orange); } .t-orange .heading text{ fill:var(--orange-text); }
+  .c-pink   .scaleWrap{ background:var(--pink);   } .t-pink   .heading text{ fill:var(--pink-text); }
+
+  @media (max-width: 640px){
+    .content{ max-width:86%; }
+  }
 </style>
 </head>
 <body>
+
 <header>
-    <div>Hello World</div>
-    <a href="https://yourusername.github.io">yourusername.github.io</a>
+  <h1>Hello World</h1>
+  <a href="https://yourusername.github.io">yourusername.github.io</a>
 </header>
 
-<canvas id="world"></canvas>
+<div id="bubble-stage"></div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
 <script>
-const colors = [
-    "#8b7bc8", // softer purple
-    "#4fc0f0", // softer blue
-    "#80c75e", // softer green
-    "#f0b562", // softer orange
-    "#ff699c"  // softer pink
-];
+/* ===== Matter.js physics + DOM bubbles ===== */
+const { Engine, Runner, World, Bodies, Body, Events } = Matter;
 
-const { Engine, Render, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint, Composite } = Matter;
+const stage = document.getElementById('bubble-stage');
+let engine, runner, walls=[];
+let domBubbles=[];
 
-const engine = Engine.create();
-const world = engine.world;
-world.gravity.y = 0;
+function vw(){ return Math.max(document.documentElement.clientWidth, window.innerWidth||0); }
+function vh(){ return Math.max(document.documentElement.clientHeight, window.innerHeight||0); }
 
-const canvas = document.getElementById('world');
-const render = Render.create({
-    canvas: canvas,
-    engine: engine,
-    options: {
-        wireframes: false,
-        background: 'transparent',
-        width: window.innerWidth,
-        height: window.innerHeight
-    }
-});
-Render.run(render);
-
-const runner = Runner.create();
-Runner.run(runner, engine);
-
-function randomColor(excludeIndex) {
-    let idx;
-    do {
-        idx = Math.floor(Math.random() * colors.length);
-    } while (idx === excludeIndex);
-    return colors[idx];
+/* Sizes: slightly smaller than previous; photo bubble smaller */
+function getSizes(){
+  const minSide = Math.min(vw(), vh());
+  const normalR = Math.max(80, Math.floor(minSide * 0.14));   // main bubbles
+  const largeR  = Math.floor(normalR * 2.1);                  // research big bubble
+  const photoR  = Math.floor(normalR * 0.9);                  // photo slightly smaller than others
+  const miniR   = Math.floor(normalR * 0.78);                 // research topic circles
+  return { normalR, largeR, photoR, miniR };
 }
 
-function createBubble(x, y, r, label, text, color, image, hoverImage, clickable, pulse) {
-    const bubble = Bodies.circle(x, y, r, {
-        restitution: 0.9,
-        frictionAir: 0.02,
-        render: {
-            fillStyle: color
-        }
+/* Create bubble (DOM + physics) */
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,id=null,pulse=false}){
+  const el = document.createElement('div');
+  el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''}`;
+  el.style.width = `${r*2}px`; el.style.height = `${r*2}px`;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'scaleWrap';
+
+  // Heading (arched small & vivid)
+  if(heading){
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute('class','heading');
+    svg.setAttribute('viewBox','0 0 100 100');
+    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    const pathId = `arc-${Math.random().toString(36).slice(2)}`;
+    path.setAttribute('id', pathId);
+    path.setAttribute('d','M10,60 A40,40 0 0,1 90,60');
+    defs.appendChild(path);
+    svg.appendChild(defs);
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
+    textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
+    textPath.setAttribute('startOffset','50%'); textPath.setAttribute('text-anchor','middle');
+    textPath.textContent = heading;
+    text.appendChild(textPath); svg.appendChild(text);
+    wrap.appendChild(svg);
+  }
+
+  // Content
+  if(content){
+    const inner = document.createElement('div');
+    inner.className = 'bubble-inner';
+    const contentBox = document.createElement('div');
+    contentBox.className = 'content';
+    contentBox.textContent = content;
+    inner.appendChild(contentBox);
+    wrap.appendChild(inner);
+  }
+
+  // Image fills (non-clickable, smooth fade)
+  if(type==='image' && images){
+    const current = document.createElement('div');
+    current.className='image-fill current';
+    current.style.backgroundImage = `url('${images.current}')`;
+    const child = document.createElement('div');
+    child.className='image-fill child';
+    child.style.backgroundImage = `url('${images.child}')`;
+    wrap.appendChild(current); wrap.appendChild(child);
+  }
+
+  el.appendChild(wrap);
+  stage.appendChild(el);
+
+  // Physics circle
+  const body = Bodies.circle(x, y, r, {
+    restitution: 0.99,
+    frictionAir: 0.004, // low during burst; we increase later
+    friction: 0.0001,
+    frictionStatic: 0.0001
+  });
+  World.add(engine.world, body);
+
+  // Click
+  if(clickable){
+    el.addEventListener('click', ()=>{
+      if(id==='try'){ window.location.href = 'project.html'; }
     });
-    bubble.label = label;
-    bubble.meta = { text, image, hoverImage, clickable, pulse };
-    return bubble;
+  }
+
+  const rec = { el, body, r, heading: !!heading };
+  domBubbles.push(rec);
+  return rec;
 }
 
-// Sizes
-const mainBubbleSize = Math.min(window.innerWidth, window.innerHeight) / 6;
-const photoSize = mainBubbleSize * 0.85;
-const subBubbleSize = mainBubbleSize * 0.6;
+/* Build the world */
+function buildWorld(){
+  if(engine){ World.clear(engine.world, false); engine=null; }
+  stage.innerHTML=''; domBubbles=[];
 
-const bubbles = [];
+  engine = Engine.create();
+  engine.world.gravity.x = 0;
+  engine.world.gravity.y = 0;
 
-// Photo bubble
-const photoBubble = createBubble(window.innerWidth/2, window.innerHeight/2, photoSize, "Photo", "", colors[0], "IMG_9361.jpg", "IMG_5766_Original.jpg", false, false);
-bubbles.push(photoBubble);
+  // Walls
+  const w = vw(), h = vh(), thick = 200;
+  walls = [
+    Bodies.rectangle(w/2, -thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(w/2, h+thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(-thick/2, h/2, thick, h+thick*2, { isStatic:true }),
+    Bodies.rectangle(w+thick/2, h/2, thick, h+thick*2, { isStatic:true })
+  ];
+  World.add(engine.world, walls);
 
-// Education bubble
-bubbles.push(createBubble(200, 200, mainBubbleSize, "Education",
-`BEng X at Y
-MSc A at B
-Interested in relevant PhD opportunities`,
-colors[1], null, null, false, false));
+  const { normalR, largeR, photoR, miniR } = getSizes();
+  const cx = vw()/2, cy = vh()/2;
 
-// Experience bubble
-bubbles.push(createBubble(400, 300, mainBubbleSize, "Experience",
-`X years of experience
-Java, Python, C#, JavaScript`,
-colors[2], null, null, false, false));
+  // Helper: position on ring around center
+  const posOnRing = (angleDeg, dist)=>({
+    x: cx + Math.cos(angleDeg*Math.PI/180) * dist,
+    y: cy + Math.sin(angleDeg*Math.PI/180) * dist
+  });
 
-// Research bubble
-bubbles.push(createBubble(600, 200, mainBubbleSize, "Technology Research Interests",
-"", colors[3], null, null, false, false));
+  const ring = Math.min(vw(),vh()) * 0.22; // start fairly central
 
-// Research sub-bubbles
-bubbles.push(createBubble(750, 150, subBubbleSize, "User Centric Design",
-`Why can't we make user experience fun without losing functionality or efficiency?`,
-colors[4], null, null, false, false));
-bubbles.push(createBubble(650, 100, subBubbleSize, "Education",
-`How is the learning experience evolving with tech and society? Balance tech support vs dependence?`,
-colors[0], null, null, false, false));
-bubbles.push(createBubble(700, 300, subBubbleSize, "Social Good",
-`How can we create a more tech-literate society? Enable informed public policy decisions?`,
-colors[1], null, null, false, false));
+  // Create main bubbles
+  const photo = makeBubble({
+    ...posOnRing(330, ring*0.7),
+    r: photoR, colorClass:'c-pink', textColorClass:'t-pink',
+    heading:'', content:'', clickable:false, type:'image',
+    images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }
+  });
 
-// Project bubble
-bubbles.push(createBubble(300, 400, mainBubbleSize, "Try My Thesis Project →",
-"", colors[4], null, null, true, true));
+  const education = makeBubble({
+    ...posOnRing(290, ring),
+    r: normalR, colorClass:'c-blue', textColorClass:'t-blue',
+    heading:'Education',
+    content:'BEng X at Y\nMSc A at B\nInterested in relevant PhD opportunities'
+  });
 
-// Add to world
-World.add(world, bubbles);
+  const educationPlus = makeBubble({
+    ...posOnRing(140, ring*1.05),
+    r: normalR, colorClass:'c-purple', textColorClass:'t-purple',
+    heading:'Education+',
+    content:'Workshops • Awards\nTeaching • Supervision\nOpen to PhD collaborations'
+  });
 
-// Walls
-const walls = [
-    Bodies.rectangle(window.innerWidth/2, -30, window.innerWidth, 60, { isStatic: true }),
-    Bodies.rectangle(window.innerWidth/2, window.innerHeight+30, window.innerWidth, 60, { isStatic: true }),
-    Bodies.rectangle(-30, window.innerHeight/2, 60, window.innerHeight, { isStatic: true }),
-    Bodies.rectangle(window.innerWidth+30, window.innerHeight/2, 60, window.innerHeight, { isStatic: true })
-];
-World.add(world, walls);
+  const experience = makeBubble({
+    ...posOnRing(230, ring*1.1),
+    r: normalR, colorClass:'c-green', textColorClass:'t-green',
+    heading:'Experience',
+    content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#'
+  });
 
-// Random start burst
-bubbles.forEach(b => {
-    Body.setVelocity(b, {
-        x: (Math.random() - 0.5) * 15,
-        y: (Math.random() - 0.5) * 15
-    });
-});
+  const researchMain = makeBubble({
+    ...posOnRing(20, ring*1.0),
+    r: largeR, colorClass:'c-orange', textColorClass:'t-orange',
+    heading:'Technology Research Interests',
+    content:''
+  });
 
-// Mouse
-const mouse = Mouse.create(render.canvas);
-const mouseConstraint = MouseConstraint.create(engine, {
-    mouse: mouse,
-    constraint: { stiffness: 0.2, render: { visible: false } }
-});
-World.add(world, mouseConstraint);
+  const tryProject = makeBubble({
+    ...posOnRing(200, ring),
+    r: normalR, colorClass:'c-pink', textColorClass:'t-pink',
+    heading:'Try My Thesis Project →',
+    content:'Play my dissertation game',
+    clickable:true, id:'try', pulse:true
+  });
 
-// Interaction
-document.addEventListener('mousemove', () => {
-    bubbles.forEach(b => {
-        Body.setVelocity(b, {
-            x: b.velocity.x * 0.98,
-            y: b.velocity.y * 0.98
-        });
-    });
-});
-
-Events.on(mouseConstraint, "mousedown", event => {
-    const body = event.source.body;
-    if (body && body.meta && body.meta.clickable) {
-        window.location.href = "YOUR_UNITY_PROJECT_PAGE_URL";
+  // Research topic bubbles (separate small circles; look "near" the main)
+  const topics = [
+    {
+      pos: { x: researchMain.body.position.x + largeR*0.65, y: researchMain.body.position.y - largeR*0.10 },
+      cls:'c-purple t-purple',
+      heading:'User-Centric Design',
+      text:"Why can't we make user experience fun without losing functionality or efficiency?\nMake applications we have to use, fun to use."
+    },
+    {
+      pos: { x: researchMain.body.position.x, y: researchMain.body.position.y - largeR*0.65 },
+      cls:'c-blue t-blue',
+      heading:'Education',
+      text:"How is learning evolving with technological advances and society?\nWhat’s the balance between tech as support vs. dependence?"
+    },
+    {
+      pos: { x: researchMain.body.position.x - largeR*0.65, y: researchMain.body.position.y + largeR*0.05 },
+      cls:'c-green t-green',
+      heading:'Social Good',
+      text:"How can we create a more tech-literate society?\nHow can we enable informed decisions on tech policy?"
     }
-});
-
-// Render overlay text & images
-(function renderOverlay(){
-    const ctx = render.context;
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    Render.world(render);
-
-    bubbles.forEach(b => {
-        const { x, y } = b.position;
-        const r = b.circleRadius;
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "white";
-        ctx.font = `bold ${r/4}px 'Courier New', monospace`;
-
-        if (b.meta.image) {
-            const img = new Image();
-            img.src = b.meta.hover && b.meta.hoverImage ? b.meta.hoverImage : b.meta.image;
-            ctx.beginPath();
-            ctx.arc(0, 0, r, 0, Math.PI * 2);
-            ctx.closePath();
-            ctx.clip();
-            ctx.drawImage(img, -r, -r, r*2, r*2);
-        } else {
-            // Heading
-            ctx.fillStyle = "rgba(0,0,0,0.8)";
-            ctx.fillText(b.label, 0, -r/2.5);
-            // Body text
-            ctx.font = `${r/6}px 'Courier New', monospace`;
-            ctx.fillStyle = "rgba(0,0,0,0.7)";
-            const lines = b.meta.text.split("\n");
-            lines.forEach((line, i) => {
-                ctx.fillText(line, 0, (i * (r/5)) - r/10);
-            });
-        }
-        ctx.restore();
+  ];
+  topics.forEach(t=>{
+    makeBubble({
+      x:t.pos.x, y:t.pos.y, r: miniR,
+      colorClass:t.cls.split(' ')[0],
+      textColorClass:t.cls.split(' ')[1],
+      heading:t.heading, content:t.text
     });
-    requestAnimationFrame(renderOverlay);
-})();
+  });
 
-window.addEventListener('resize', () => {
-    render.canvas.width = window.innerWidth;
-    render.canvas.height = window.innerHeight;
+  // Start engine
+  if(runner) Matter.Runner.stop(runner);
+  runner = Runner.create();
+  Runner.run(runner, engine);
+
+  // ===== Burst animation: outward push then settle to drift =====
+  const all = domBubbles.map(b=>b.body);
+  // Initial outward velocities
+  all.forEach(b=>{
+    const v = { x: b.position.x - cx, y: b.position.y - cy };
+    const len = Math.max(0.001, Math.hypot(v.x, v.y));
+    const speed = 3 + Math.random()*2.5; // lively start
+    Body.setVelocity(b, { x: (v.x/len)*speed, y: (v.y/len)*speed });
+    b.frictionAir = 0.004; // low during burst
+  });
+  // After 2.8s, soften to gentle drift
+  setTimeout(()=>{
+    all.forEach(b=>{
+      b.frictionAir = 0.02;
+      Body.setVelocity(b, { x: b.velocity.x*0.45, y: b.velocity.y*0.45 });
+    });
+  }, 2800);
+
+  // Keep DOM in sync + scale heading/content sizes
+  Events.on(engine, 'afterUpdate', ()=>{
+    domBubbles.forEach(({el, body, r, heading})=>{
+      el.style.left = body.position.x + 'px';
+      el.style.top  = body.position.y + 'px';
+      el.style.width = (r*2)+'px';
+      el.style.height= (r*2)+'px';
+
+      // Heading font small & consistent
+      if(heading){
+        const headTexts = el.querySelectorAll('.heading text');
+        headTexts.forEach(t => t.style.fontSize = Math.max(9, Math.floor(r*0.12)) + 'px');
+      }
+      // Content font
+      const content = el.querySelector('.content');
+      if(content){ content.style.fontSize = Math.max(12, Math.floor(r*0.14)) + 'px'; }
+    });
+  });
+
+  // Gentle micro-kick on mouse move (keeps things alive)
+  window.addEventListener('mousemove', ()=>{
+    all.forEach(b=>{
+      Matter.Body.applyForce(b, b.position, { x:(Math.random()-0.5)*0.0004, y:(Math.random()-0.5)*0.0004 });
+    });
+  }, { passive:true });
+}
+
+/* Rebuild on resize */
+let resizeTimer;
+window.addEventListener('resize', ()=>{
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(()=>{ buildWorld(); }, 150);
 });
+
+/* Init */
+buildWorld();
 </script>
 </body>
 </html>
