@@ -12,7 +12,6 @@
     --green:#b8e68f;    --green-text:#3f9b1b;
     --orange:#f8d79f;   --orange-text:#b66f11;
     --pink:#ff9fc6;     --pink-text:#ff1668;
-
     --bg:#fff4f1;
   }
   html,body{margin:0;height:100%;background:var(--bg);font-family:"Courier New", monospace;overflow:hidden;}
@@ -51,7 +50,7 @@
 <div id="bubble-stage"></div>
 
 <script>
-const { Engine, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint } = Matter;
+const { Engine, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint, Constraint } = Matter;
 
 const stage = document.getElementById('bubble-stage');
 let engine, runner, domBubbles=[];
@@ -66,7 +65,14 @@ function getSizes(){
   return { bubbleR, researchR };
 }
 
-function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,id=null,pulse=false}){
+function randomPos(r){
+  return {
+    x: r + Math.random()*(vw() - 2*r),
+    y: r + Math.random()*(vh() - 2*r)
+  };
+}
+
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false}){
   const el = document.createElement('div');
   el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''}`;
   el.style.width = el.style.height = r*2+'px';
@@ -124,48 +130,64 @@ function buildWorld(){
   const { bubbleR, researchR } = getSizes();
   const cx = vw()/2, cy = vh()/2;
 
-  // Research main bubble
+  // Edges (walls) to prevent flying off
+  const thickness = 100;
+  const walls = [
+    Bodies.rectangle(vw()/2, -thickness/2, vw(), thickness, { isStatic:true }),
+    Bodies.rectangle(vw()/2, vh()+thickness/2, vw(), thickness, { isStatic:true }),
+    Bodies.rectangle(-thickness/2, vh()/2, thickness, vh(), { isStatic:true }),
+    Bodies.rectangle(vw()+thickness/2, vh()/2, thickness, vh(), { isStatic:true })
+  ];
+  World.add(engine.world, walls);
+
+  // Research main bubble (center)
   const research = makeBubble({
     x:cx, y:cy, r:researchR, colorClass:'c-orange', textColorClass:'t-orange', heading:'Research', content:'', clickable:true
   });
 
-  // Sub bubbles inside research bubble
-  const offsets = [
-    {x: researchR*0.5, y: 0},
-    {x: -researchR*0.25, y: -researchR*0.5},
-    {x: -researchR*0.25, y: researchR*0.5}
-  ];
+  // Sub bubbles contained in research bubble
   const subData = [
     {heading:'User-Centric Design', text:"Make UX fun without losing efficiency."},
     {heading:'Education', text:"How is learning evolving with tech and society?"},
     {heading:'Social Good', text:"Create a tech-literate society."}
   ];
 
-  offsets.forEach((off,i)=>{
-    makeBubble({
-      x:research.body.position.x+off.x,
-      y:research.body.position.y+off.y,
-      r:bubbleR,
-      colorClass:['c-purple','c-blue','c-green'][i],
-      textColorClass:['t-purple','t-blue','t-green'][i],
-      heading: subData[i].heading,
-      content: subData[i].text,
-      clickable:true
+  const subBubbles = subData.map((d,i)=>{
+    const pos = {
+      x: research.body.position.x + (Math.random()*researchR*1.5 - researchR*0.75),
+      y: research.body.position.y + (Math.random()*researchR*1.5 - researchR*0.75)
+    };
+    const colorClasses = ['c-purple','c-blue','c-green'];
+    const textClasses  = ['t-purple','t-blue','t-green'];
+    const b = makeBubble({
+      x: pos.x, y: pos.y, r:bubbleR,
+      colorClass: colorClasses[i], textColorClass: textClasses[i],
+      heading: d.heading, content: d.text, clickable:true
     });
+    return b;
   });
 
-  // Additional bubbles
+  // Constraint: keep sub-bubbles near research bubble
+  subBubbles.forEach(b=>{
+    const c = Constraint.create({
+      bodyA: research.body,
+      bodyB: b.body,
+      length: researchR, // max distance
+      stiffness: 0.05
+    });
+    World.add(engine.world, c);
+  });
+
+  // Other bubbles with random positions
   const others = [
-    {heading:'Education', content:'BEng X at Y\nMSc A at B', color:'c-blue', text:'t-blue', angle:150},
-    {heading:'Experience', content:'Java • Python • JS\nHTML • CSS • Unity • C#', color:'c-green', text:'t-green', angle:210},
-    {heading:'Try Project →', content:'Play my dissertation game', color:'c-pink', text:'t-pink', angle:270, pulse:true}
+    {heading:'Education', content:'BEng X at Y\nMSc A at B', color:'c-blue', text:'t-blue'},
+    {heading:'Experience', content:'Java • Python • JS\nHTML • CSS • Unity • C#', color:'c-green', text:'t-green'},
+    {heading:'Try Project →', content:'Play my dissertation game', color:'c-pink', text:'t-pink', pulse:true}
   ];
   others.forEach(o=>{
-    const rad = o.angle*Math.PI/180, dist = researchR*1.5;
+    const pos = randomPos(bubbleR);
     makeBubble({
-      x:cx+Math.cos(rad)*dist,
-      y:cy+Math.sin(rad)*dist,
-      r:bubbleR, colorClass:o.color, textColorClass:o.text, heading:o.heading, content:o.content, clickable:true, pulse:o.pulse
+      x: pos.x, y: pos.y, r:bubbleR, colorClass:o.color, textColorClass:o.text, heading:o.heading, content:o.content, clickable:true, pulse:o.pulse
     });
   });
 
