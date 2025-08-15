@@ -2,172 +2,134 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Interactive Bubbles</title>
+<title>Portfolio Bubbles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
-  body {
-    margin: 0;
-    overflow: hidden;
-    font-family: Arial, sans-serif;
-  }
-  canvas {
-    display: block;
-  }
+:root{
+  --purple:#9b8ae0; --purple-text:#5d46bf;
+  --blue:#74cef9; --blue-text:#007ed6;
+  --green:#b8e68f; --green-text:#3f9b1b;
+  --orange:#f8d79f; --orange-text:#b66f11;
+  --pink:#ff9fc6; --pink-text:#ff1668;
+  --bg:#fff4f1;
+}
+html,body{ margin:0; height:100%; background:var(--bg); font-family:"Courier New", monospace; overflow:hidden;}
+header{ position:fixed; inset:0 0 auto 0; height:58px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; z-index:1000; background:transparent; pointer-events:none;}
+header h1{ margin:0; font-size:clamp(18px,2.4vw,28px); font-weight:700; color:#222; pointer-events:auto;}
+header a{ pointer-events:auto; color:#1a73e8; font-weight:700; text-decoration:none; font-size:clamp(14px,1.8vw,20px);}
+#bubble-stage{ position:fixed; inset:0;}
+.bubble{ position:absolute; transform:translate(-50%,-50%); width:100px; height:100px; cursor:pointer;}
+.scaleWrap{ position:absolute; inset:0; border-radius:50%; overflow:hidden; border:1px solid rgba(0,0,0,0.08); box-shadow:0 6px 18px rgba(0,0,0,0.06); display:flex; align-items:center; justify-content:center; text-align:center;}
+.bubble-inner{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:10%; }
+.content{ line-height:1.25; white-space:pre-wrap; word-break:break-word; max-width:78%; color:#1a1a1a; font-size:14px; }
+.c-purple .scaleWrap{ background:var(--purple); } .t-purple .scaleWrap{ color:var(--purple-text);}
+.c-blue .scaleWrap{ background:var(--blue); } .t-blue .scaleWrap{ color:var(--blue-text);}
+.c-green .scaleWrap{ background:var(--green); } .t-green .scaleWrap{ color:var(--green-text);}
+.c-orange .scaleWrap{ background:var(--orange);} .t-orange .scaleWrap{ color:var(--orange-text);}
+.c-pink .scaleWrap{ background:var(--pink);} .t-pink .scaleWrap{ color:var(--pink-text);}
 </style>
 </head>
 <body>
-<canvas id="bubbleCanvas"></canvas>
+<header>
+  <h1>Hello World</h1>
+  <a href="https://yourusername.github.io">yourusername.github.io</a>
+</header>
+<div id="bubble-stage"></div>
 
 <script>
-const canvas = document.getElementById('bubbleCanvas');
-const ctx = canvas.getContext('2d');
+const { Engine, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint } = Matter;
+const stage = document.getElementById('bubble-stage');
+let engine, runner, domBubbles=[];
 
-let width = canvas.width = window.innerWidth;
-let height = canvas.height = window.innerHeight;
+function vw(){ return Math.max(document.documentElement.clientWidth, window.innerWidth||0);}
+function vh(){ return Math.max(document.documentElement.clientHeight, window.innerHeight||0);}
 
-window.addEventListener('resize', () => {
-  width = canvas.width = window.innerWidth;
-  height = canvas.height = window.innerHeight;
-});
-
-class Bubble {
-  constructor(x, y, radius, color, heading, text, isParent=false, image=null) {
-    this.x = x;
-    this.y = y;
-    this.radius = radius;
-    this.color = color;
-    this.heading = heading;
-    this.text = text;
-    this.isParent = isParent;
-    this.image = image;
-    this.subBubbles = [];
-    this.vx = (Math.random() - 0.5) * 1;
-    this.vy = (Math.random() - 0.5) * 1;
-  }
-
-  addSubBubble(bubble) {
-    this.subBubbles.push(bubble);
-  }
-
-  draw(ctx) {
-    // Draw bubble
-    ctx.beginPath();
-    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-    ctx.closePath();
-
-    // Draw heading
-    ctx.fillStyle = "#000";
-    ctx.font = `${this.radius * 0.2}px Arial`;
-    ctx.textAlign = "center";
-    ctx.fillText(this.heading, this.x, this.y - this.radius * 0.5);
-
-    // Draw text
-    ctx.font = `${this.radius * 0.12}px Arial`;
-    const textLines = this.text.match(/.{1,15}/g) || [];
-    textLines.forEach((line, i) => {
-      ctx.fillText(line, this.x, this.y - this.radius * 0.2 + i * this.radius * 0.18);
-    });
-
-    // Draw image if exists
-    if (this.image) {
-      const imgSize = this.radius * 0.6;
-      ctx.drawImage(this.image, this.x - imgSize/2, this.y - imgSize/2 + this.radius*0.1, imgSize, imgSize);
-    }
-  }
-
-  update() {
-    this.x += this.vx;
-    this.y += this.vy;
-
-    // Bounce off edges
-    if (this.x + this.radius > width || this.x - this.radius < 0) this.vx *= -1;
-    if (this.y + this.radius > height || this.y - this.radius < 0) this.vy *= -1;
-
-    // Keep sub-bubbles inside parent
-    if (this.isParent) {
-      this.subBubbles.forEach(sb => {
-        const dx = sb.x - this.x;
-        const dy = sb.y - this.y;
-        const dist = Math.sqrt(dx*dx + dy*dy);
-        if (dist + sb.radius > this.radius) {
-          const angle = Math.atan2(dy, dx);
-          sb.x = this.x + (this.radius - sb.radius) * Math.cos(angle);
-          sb.y = this.y + (this.radius - sb.radius) * Math.sin(angle);
-        }
-        sb.update();
-      });
-    }
-  }
+function getSizes(){
+  const minSide = Math.min(vw(), vh());
+  const normalR = Math.max(80, Math.floor(minSide*0.14));
+  const researchR = normalR*2;
+  return {normalR, researchR};
 }
 
-// Load image for photo bubble
-const photo = new Image();
-photo.src = 'https://via.placeholder.com/100'; // replace with your actual image URL
+function makeBubble({x,y,r,colorClass,textColorClass,content,clickable=true,id=null}){
+  const el = document.createElement('div');
+  el.className = `bubble ${colorClass} ${textColorClass}`;
+  el.style.width = `${r*2}px`; el.style.height = `${r*2}px`;
+  const wrap = document.createElement('div'); wrap.className='scaleWrap';
+  if(content){
+    const inner = document.createElement('div'); inner.className='bubble-inner';
+    const contentBox = document.createElement('div'); contentBox.className='content';
+    contentBox.textContent = content;
+    inner.appendChild(contentBox); wrap.appendChild(inner);
+  }
+  el.appendChild(wrap);
+  stage.appendChild(el);
+  const body = Bodies.circle(x,y,r,{ restitution:0.99, frictionAir:0.02 });
+  World.add(engine.world, body);
+  const rec = {el, body, r}; domBubbles.push(rec);
+  return rec;
+}
 
-photo.onload = () => {
-  init();
-};
+function buildWorld(){
+  if(engine){ World.clear(engine.world,false); engine=null;}
+  stage.innerHTML=''; domBubbles=[];
+  engine = Engine.create(); engine.world.gravity.x=0; engine.world.gravity.y=0;
 
-function init() {
-  const bubbles = [];
+  const {normalR,researchR} = getSizes();
+  const cx = vw()/2, cy = vh()/2;
 
-  const colors = ['#f94144','#f3722c','#f8961e','#f9844a','#f9c74f','#90be6d','#43aa8b','#577590'];
+  // Main research bubble
+  const research = makeBubble({x:cx,y:cy,r:researchR,colorClass:'c-orange',textColorClass:'t-orange',content:'Research'});
 
-  const researchBubble = new Bubble(
-    Math.random() * width,
-    Math.random() * height,
-    120,
-    colors[0],
-    'Research',
-    'Main research bubble with subtopics',
-    true
-  );
-
-  // Create sub-bubbles
-  const sub1 = new Bubble(researchBubble.x + 30, researchBubble.y, 40, colors[1], 'Sub1', 'Subtopic 1');
-  const sub2 = new Bubble(researchBubble.x - 50, researchBubble.y - 20, 40, colors[2], 'Sub2', 'Subtopic 2');
-  const sub3 = new Bubble(researchBubble.x + 10, researchBubble.y + 50, 40, colors[3], 'Sub3', 'Subtopic 3');
-
-  researchBubble.addSubBubble(sub1);
-  researchBubble.addSubBubble(sub2);
-  researchBubble.addSubBubble(sub3);
-
-  // Create photo bubble
-  const photoBubble = new Bubble(
-    Math.random() * width,
-    Math.random() * height,
-    80,
-    colors[4],
-    'Photo',
-    '',
-    false,
-    photo
-  );
-
-  const otherBubbles = [
-    new Bubble(Math.random()*width, Math.random()*height, 60, colors[5], 'Bubble1', 'Extra bubble 1'),
-    new Bubble(Math.random()*width, Math.random()*height, 60, colors[6], 'Bubble2', 'Extra bubble 2'),
-    new Bubble(Math.random()*width, Math.random()*height, 60, colors[7], 'Bubble3', 'Extra bubble 3')
-  ];
-
-  bubbles.push(researchBubble, photoBubble, ...otherBubbles);
-
-  function animate() {
-    ctx.clearRect(0, 0, width, height);
-    bubbles.forEach(b => {
-      b.update();
-      b.draw(ctx);
-      if (b.isParent) {
-        b.subBubbles.forEach(sb => sb.draw(ctx));
-      }
+  // Sub-bubbles inside research bubble
+  const subAngles = [0, 120, 240];
+  subAngles.forEach((angle,i)=>{
+    const rad = angle*Math.PI/180;
+    const distance = researchR*0.6;
+    makeBubble({
+      x: cx + distance*Math.cos(rad),
+      y: cy + distance*Math.sin(rad),
+      r: normalR,
+      colorClass:['c-purple','c-blue','c-green'][i],
+      textColorClass:['t-purple','t-blue','t-green'][i],
+      content:['UX Design','Education','Social Good'][i]
     });
-    requestAnimationFrame(animate);
+  });
+
+  // Add more normal bubbles around
+  for(let i=0;i<3;i++){
+    const angle=Math.random()*2*Math.PI; const dist = researchR*1.5 + Math.random()*100;
+    makeBubble({
+      x: cx + dist*Math.cos(angle),
+      y: cy + dist*Math.sin(angle),
+      r: normalR,
+      colorClass:['c-pink','c-blue','c-green'][i],
+      textColorClass:['t-pink','t-blue','t-green'][i],
+      content:['Experience','Education+','Try Project'][i]
+    });
   }
 
-  animate();
+  // Add mouse interaction for dragging
+  const mouse = Mouse.create(stage);
+  const mouseConstraint = MouseConstraint.create(engine,{ mouse, constraint:{ stiffness:0.2, render:{visible:false} }});
+  World.add(engine.world, mouseConstraint);
+
+  if(runner) Runner.stop(runner);
+  runner = Runner.create(); Runner.run(runner,engine);
+
+  Events.on(engine,'afterUpdate',()=>{
+    domBubbles.forEach(({el,body,r})=>{
+      el.style.left = body.position.x + 'px';
+      el.style.top = body.position.y + 'px';
+      el.style.width = (r*2)+'px';
+      el.style.height= (r*2)+'px';
+    });
+  });
 }
+
+window.addEventListener('resize',()=>{ setTimeout(buildWorld,150); });
+buildWorld();
 </script>
 </body>
 </html>
