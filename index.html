@@ -7,68 +7,67 @@
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
 :root{
-  --purple:#9b8ae0; --purple-text:#5d46bf;
-  --blue:#74cef9; --blue-text:#007ed6;
-  --green:#b8e68f; --green-text:#3f9b1b;
-  --orange:#f8d79f; --orange-text:#b66f11;
-  --pink:#ff9fc6; --pink-text:#ff1668;
-  --candy1:#ffa5c0; --candy2:#a0e9ff; --candy3:#caff7f;
-  --bg:#fff4f1;
+  /* Paler candy tones based on your palette + 3 extras */
+  --purple:#a99bd4; --purple-text:#5d46bf;
+  --blue:#7ecbf3; --blue-text:#007ed6;
+  --green:#a6d487; --green-text:#3f9b1b;
+  --yellow:#f2c57e; --yellow-text:#b66f11; /* reserved for research group */
+  --pink:#f89dbf; --pink-text:#d91664;
+  --turquoise:#9ee9df; --turquoise-text:#00887b; /* extra */
+  --peach:#f7b4a0; --peach-text:#a84020;        /* extra */
+  --mint:#b6e8b3; --mint-text:#238b2e;          /* extra */
+  --bg:#fff9f6;
 }
 html,body{margin:0;height:100%;background:var(--bg);font-family:"Courier New", monospace;overflow:hidden;}
 header{position:fixed;inset:0 0 auto 0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:1000;background:transparent;pointer-events:none;}
-header h1, header h2, header a{pointer-events:auto;margin:0;}
-header h1{font-size:clamp(18px, 2.4vw, 28px);font-weight:700;color:#222;}
-header h2{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:flex;gap:2px;font-weight:700;}
-header a{color:#1a73e8;font-weight:700;text-decoration:none;font-size:clamp(14px, 1.8vw, 20px);}
+header h1{margin:0;font-size:clamp(18px, 2.4vw, 28px);font-weight:700;color:#222;pointer-events:auto;}
+header a{pointer-events:auto;color:#1a73e8;font-weight:700;text-decoration:none;font-size:clamp(14px, 1.8vw, 20px);}
 #bubble-stage{position:fixed;inset:0;}
 .bubble{position:absolute;transform:translate(-50%,-50%);}
 .scaleWrap{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(0,0,0,0.08);box-shadow:0 6px 18px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;text-align:center;transition:box-shadow .2s ease, filter .2s ease, opacity .25s ease;}
 .bubble.clickable{cursor:grab;}
 .bubble.pulse .scaleWrap{animation:pulse 4s ease-in-out infinite;}
 @keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
-.bubble-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10%;}
-.content{line-height:1.25;white-space:pre-wrap;word-break:break-word;max-width:78%;color:#1a1a1a;font-size:14px;}
+.bubble-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8%;}
+.content{line-height:1.25;white-space:pre-wrap;word-break:break-word;max-width:80%;color:#1a1a1a;font-size:14px;}
 .heading{position:absolute;inset:0;pointer-events:none;}
-.heading text{font-weight:700;letter-spacing:.02em;font-size:16px;}
+.heading text{font-weight:700;letter-spacing:.02em;font-size:12px;}
 .image-fill{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .3s ease;}
 .image-fill.child{opacity:0;}
 .bubble.image:hover .image-fill.child{opacity:1;}
 .bubble.image:hover .image-fill.current{opacity:0;}
+
+/* Colour classes */
 .c-purple .scaleWrap{background:var(--purple);}
 .t-purple .heading text{fill:var(--purple-text);}
 .c-blue .scaleWrap{background:var(--blue);}
 .t-blue .heading text{fill:var(--blue-text);}
 .c-green .scaleWrap{background:var(--green);}
 .t-green .heading text{fill:var(--green-text);}
-.c-orange .scaleWrap{background:var(--orange);}
-.t-orange .heading text{fill:var(--orange-text);}
+.c-yellow .scaleWrap{background:var(--yellow);}
+.t-yellow .heading text{fill:var(--yellow-text);}
 .c-pink .scaleWrap{background:var(--pink);}
 .t-pink .heading text{fill:var(--pink-text);}
-.c-candy1 .scaleWrap{background:var(--candy1);}
-.t-candy1 .heading text{fill:var(--purple-text);}
-.c-candy2 .scaleWrap{background:var(--candy2);}
-.t-candy2 .heading text{fill:var(--blue-text);}
-.c-candy3 .scaleWrap{background:var(--candy3);}
-.t-candy3 .heading text{fill:var(--green-text);}
-.wave-letter{display:inline-block;opacity:0;transform:translateY(0);}
+.c-turquoise .scaleWrap{background:var(--turquoise);}
+.t-turquoise .heading text{fill:var(--turquoise-text);}
+.c-peach .scaleWrap{background:var(--peach);}
+.t-peach .heading text{fill:var(--peach-text);}
+.c-mint .scaleWrap{background:var(--mint);}
+.t-mint .heading text{fill:var(--mint-text);}
 </style>
 </head>
 <body>
 <header>
   <h1>Hello World</h1>
-  <h2 id="middle-heading"></h2>
-  <a href="https://yourusername.github.io">Firstname Lastname</a>
+  <a href="https://yourusername.github.io">yourusername.github.io</a>
 </header>
 <div id="bubble-stage"></div>
 
 <script>
-const { Engine, Runner, World, Bodies, Body, Events, Mouse, MouseConstraint } = Matter;
+const { Engine, Runner, World, Bodies, Mouse, MouseConstraint, Events } = Matter;
 const stage = document.getElementById('bubble-stage');
 let engine, runner, walls=[];
 let domBubbles=[];
-
-const colors = ['--purple','--blue','--green','--orange','--pink','--candy1','--candy2','--candy3'];
 
 function vw(){ return Math.max(document.documentElement.clientWidth, window.innerWidth||0); }
 function vh(){ return Math.max(document.documentElement.clientHeight, window.innerHeight||0); }
@@ -95,7 +94,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
-    path.setAttribute('d','M10,45 A40,40 0 0,1 90,45');
+    path.setAttribute('d','M10,50 A40,40 0 0,1 90,50'); // slightly lowered arc
     path.setAttribute('id', pathId);
     defs.appendChild(path);
     svg.appendChild(defs);
@@ -136,7 +135,8 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
 
   const body = Bodies.circle(x, y, r, { restitution: 0.9, frictionAir: 0.02 });
   World.add(engine.world, body);
-  domBubbles.push({ el, body, r, heading: !!heading });
+
+  domBubbles.push({ el, body, r });
 }
 
 function buildWorld(){
@@ -159,11 +159,10 @@ function buildWorld(){
   const { uniformR } = getSizes();
   const randPos = ()=>({ x: Math.random()*vw(), y: Math.random()*vh() });
 
-  // Pink Portfolio bubble
+  // Assign each bubble a unique candy colour
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
     type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
 
-  // Other bubbles
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-blue', textColorClass:'t-blue',
     heading:'Education', content:'BEng X at Y\nMSc A at B\nInterested in relevant PhD opportunities', clickable:true });
 
@@ -173,8 +172,14 @@ function buildWorld(){
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
     heading:'Experience', content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#', clickable:true });
 
-  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
     heading:'Try My Thesis Project →', content:'Play my dissertation game', clickable:true, pulse:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-peach', textColorClass:'t-peach',
+    heading:'Portfolio', content:'Check my other projects', clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
+    heading:'Contact', content:'email@example.com', clickable:true });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
@@ -202,21 +207,6 @@ window.addEventListener('resize', ()=>{
 });
 
 buildWorld();
-
-// Middle wave heading
-const text = 'Firstname Lastname';
-const headingEl = document.getElementById('middle-heading');
-text.split('').forEach((char,i)=>{
-  const span = document.createElement('span');
-  span.className='wave-letter';
-  span.style.color = `var(${colors[i % colors.length]})`;
-  const amplitude = 8;
-  const angle = i / (text.length-1) * Math.PI;
-  span.style.transform = `translateY(${Math.sin(angle)*amplitude}px)`;
-  span.textContent = char;
-  headingEl.appendChild(span);
-  setTimeout(()=>{ span.style.opacity=1; }, i*120);
-});
 </script>
 </body>
 </html>
