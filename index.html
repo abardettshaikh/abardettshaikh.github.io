@@ -167,19 +167,19 @@ function buildWorld(){
     heading:'Education', content:'BEng X at Y\nMSc A at B\nInterested in relevant PhD opportunities', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
-    heading:'Education+', content:'Workshops • Awards\nTeaching • Supervision\nOpen to PhD collaborations', clickable:true });
+    heading:'EdTech', content:'How is the learning experience evolving with technological advances and society? In the learning process, where is the right balance between technology being supportive and not a critical dependence?', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
-    heading:'Experience', content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#', clickable:true });
+    heading:'Experience', content:'5 years of work experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C# • VBA', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
-    heading:'Try My Thesis Project →', content:'Play my dissertation game', clickable:true, pulse:true });
+    heading:'Play My Thesis Project →', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true });
 
-  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-peach', textColorClass:'t-peach',
-    heading:'Portfolio', content:'Check my other projects', clickable:true });
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
+    heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency? I.e. make applications which we have to use, fun to use', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
-    heading:'Contact', content:'email@example.com', clickable:true });
+    heading:'Social Good', content:'How can we create a more tech-literate society? How can we enable the general public to make informed decisions on tech related public policy?', clickable:true });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
