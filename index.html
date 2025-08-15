@@ -7,14 +7,16 @@
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
 :root{
-  --purple:#9b8ae0; --purple-text:#5d46bf;
-  --blue:#74cef9; --blue-text:#007ed6;
-  --green:#b8e68f; --green-text:#3f9b1b;
-  --orange:#f8d79f; --orange-text:#b66f11;
-  --pink:#ff9fc6; --pink-text:#ff1668;
-  --turquoise:#58e6d9; --turquoise-text:#00887b;
-  --sunset:#ff7e4b; --sunset-text:#8a2f00;
-  --bg:#fff4f1;
+  /* Paler candy tones based on your palette + 3 extras */
+  --purple:#a99bd4; --purple-text:#5d46bf;
+  --blue:#7ecbf3; --blue-text:#007ed6;
+  --green:#a6d487; --green-text:#3f9b1b;
+  --yellow:#f2c57e; --yellow-text:#b66f11; /* reserved for research group */
+  --pink:#f89dbf; --pink-text:#d91664;
+  --turquoise:#9ee9df; --turquoise-text:#00887b; /* extra */
+  --peach:#f7b4a0; --peach-text:#a84020;        /* extra */
+  --mint:#b6e8b3; --mint-text:#238b2e;          /* extra */
+  --bg:#fff9f6;
 }
 html,body{margin:0;height:100%;background:var(--bg);font-family:"Courier New", monospace;overflow:hidden;}
 header{position:fixed;inset:0 0 auto 0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:1000;background:transparent;pointer-events:none;}
@@ -34,20 +36,24 @@ header a{pointer-events:auto;color:#1a73e8;font-weight:700;text-decoration:none;
 .image-fill.child{opacity:0;}
 .bubble.image:hover .image-fill.child{opacity:1;}
 .bubble.image:hover .image-fill.current{opacity:0;}
+
+/* Colour classes */
 .c-purple .scaleWrap{background:var(--purple);}
 .t-purple .heading text{fill:var(--purple-text);}
 .c-blue .scaleWrap{background:var(--blue);}
 .t-blue .heading text{fill:var(--blue-text);}
 .c-green .scaleWrap{background:var(--green);}
 .t-green .heading text{fill:var(--green-text);}
-.c-orange .scaleWrap{background:var(--orange);}
-.t-orange .heading text{fill:var(--orange-text);}
+.c-yellow .scaleWrap{background:var(--yellow);}
+.t-yellow .heading text{fill:var(--yellow-text);}
 .c-pink .scaleWrap{background:var(--pink);}
 .t-pink .heading text{fill:var(--pink-text);}
 .c-turquoise .scaleWrap{background:var(--turquoise);}
 .t-turquoise .heading text{fill:var(--turquoise-text);}
-.c-sunset .scaleWrap{background:var(--sunset);}
-.t-sunset .heading text{fill:var(--sunset-text);}
+.c-peach .scaleWrap{background:var(--peach);}
+.t-peach .heading text{fill:var(--peach-text);}
+.c-mint .scaleWrap{background:var(--mint);}
+.t-mint .heading text{fill:var(--mint-text);}
 </style>
 </head>
 <body>
@@ -68,7 +74,7 @@ function vh(){ return Math.max(document.documentElement.clientHeight, window.inn
 
 function getSizes(){
   const minSide = Math.min(vw(), vh());
-  const uniformR = Math.max(80, Math.floor(minSide * 0.12)); 
+  const uniformR = Math.max(90, Math.floor(minSide * 0.14)); // slightly bigger
   return { uniformR };
 }
 
@@ -153,7 +159,7 @@ function buildWorld(){
   const { uniformR } = getSizes();
   const randPos = ()=>({ x: Math.random()*vw(), y: Math.random()*vh() });
 
-  // Main bubbles with unique vivid colors
+  // Assign each bubble a unique candy colour
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
     type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
 
@@ -163,25 +169,17 @@ function buildWorld(){
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
     heading:'Education+', content:'Workshops • Awards\nTeaching • Supervision\nOpen to PhD collaborations', clickable:true });
 
-  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-orange', textColorClass:'t-orange',
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
     heading:'Experience', content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
     heading:'Try My Thesis Project →', content:'Play my dissertation game', clickable:true, pulse:true });
 
-  // Research sub-bubbles (clustered together)
-  const clusterX = vw()/2, clusterY = vh()/2;
-  const offsets = [[0,0],[uniformR*1.5,0],[-uniformR*1.5,0]];
-  const topics = [
-    {cls:'c-sunset t-sunset', heading:'User-Centric Design', text:"Fun UX without losing efficiency"},
-    {cls:'c-green t-green', heading:'Education', text:"Tech & learning balance"},
-    {cls:'c-blue t-blue', heading:'Social Good', text:"Tech literacy & policy"}
-  ];
-  topics.forEach((t,i)=>{
-    makeBubble({ x: clusterX+offsets[i][0], y: clusterY+offsets[i][1], r: uniformR,
-      colorClass:t.cls.split(' ')[0], textColorClass:t.cls.split(' ')[1],
-      heading:t.heading, content:t.text, clickable:true });
-  });
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-peach', textColorClass:'t-peach',
+    heading:'Portfolio', content:'Check my other projects', clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
+    heading:'Contact', content:'email@example.com', clickable:true });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
