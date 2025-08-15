@@ -1,230 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>My Portfolio</title>
+<meta charset="UTF-8" />
+<title>Portfolio Bubbles</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  background-color: #fff8f6; /* warm near-white */
-  overflow: hidden;
-  font-family: "Courier New", monospace;
+:root{
+  --purple:#9b8ae0; --purple-text:#5d46bf;
+  --blue:#74cef9; --blue-text:#007ed6;
+  --green:#b8e68f; --green-text:#3f9b1b;
+  --orange:#f8d79f; --orange-text:#b66f11;
+  --pink:#ff9fc6; --pink-text:#ff1668;
+  --turquoise:#58e6d9; --turquoise-text:#00887b;
+  --sunset:#ff7e4b; --sunset-text:#8a2f00;
+  --bg:#fff4f1;
 }
-svg {
-  width: 100%;
-  height: 100%;
-}
-text {
-  user-select: none;
-  pointer-events: none;
-}
-.bubble-image {
-  pointer-events: none;
-}
+html,body{margin:0;height:100%;background:var(--bg);font-family:"Courier New", monospace;overflow:hidden;}
+header{position:fixed;inset:0 0 auto 0;height:58px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;z-index:1000;background:transparent;pointer-events:none;}
+header h1{margin:0;font-size:clamp(18px, 2.4vw, 28px);font-weight:700;color:#222;pointer-events:auto;}
+header a{pointer-events:auto;color:#1a73e8;font-weight:700;text-decoration:none;font-size:clamp(14px, 1.8vw, 20px);}
+#bubble-stage{position:fixed;inset:0;}
+.bubble{position:absolute;transform:translate(-50%,-50%);}
+.scaleWrap{position:absolute;inset:0;border-radius:50%;overflow:hidden;border:1px solid rgba(0,0,0,0.08);box-shadow:0 6px 18px rgba(0,0,0,0.06);display:flex;align-items:center;justify-content:center;text-align:center;transition:box-shadow .2s ease, filter .2s ease, opacity .25s ease;}
+.bubble.clickable{cursor:grab;}
+.bubble.pulse .scaleWrap{animation:pulse 4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+.bubble-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8%;}
+.content{line-height:1.25;white-space:pre-wrap;word-break:break-word;max-width:80%;color:#1a1a1a;font-size:14px;}
+.heading{position:absolute;inset:0;pointer-events:none;}
+.heading text{font-weight:700;letter-spacing:.02em;font-size:12px;}
+.image-fill{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .3s ease;}
+.image-fill.child{opacity:0;}
+.bubble.image:hover .image-fill.child{opacity:1;}
+.bubble.image:hover .image-fill.current{opacity:0;}
+.c-purple .scaleWrap{background:var(--purple);}
+.t-purple .heading text{fill:var(--purple-text);}
+.c-blue .scaleWrap{background:var(--blue);}
+.t-blue .heading text{fill:var(--blue-text);}
+.c-green .scaleWrap{background:var(--green);}
+.t-green .heading text{fill:var(--green-text);}
+.c-orange .scaleWrap{background:var(--orange);}
+.t-orange .heading text{fill:var(--orange-text);}
+.c-pink .scaleWrap{background:var(--pink);}
+.t-pink .heading text{fill:var(--pink-text);}
+.c-turquoise .scaleWrap{background:var(--turquoise);}
+.t-turquoise .heading text{fill:var(--turquoise-text);}
+.c-sunset .scaleWrap{background:var(--sunset);}
+.t-sunset .heading text{fill:var(--sunset-text);}
 </style>
 </head>
 <body>
-<svg id="bubbles"></svg>
+<header>
+  <h1>Hello World</h1>
+  <a href="https://yourusername.github.io">yourusername.github.io</a>
+</header>
+<div id="bubble-stage"></div>
 
 <script>
-// === Config ===
-const colors = [
-  { fill: "#735cb0", text: "#4b2f80" }, // purple
-  { fill: "#00a4ef", text: "#005f87" }, // bright blue
-  { fill: "#6ab43e", text: "#3b6821" }, // green
-  { fill: "#e89d41", text: "#8a5612" }, // orange
-  { fill: "#fd4084", text: "#8a1240" }, // pink
-  { fill: "#1dd2af", text: "#0f6e5c" }, // turquoise
-  { fill: "#ff4f58", text: "#801f24" }, // pinky red
-  { fill: "#ff6f3c", text: "#872e14" }  // sunset orange-red
-];
-const bubbleSize = 120;
-const subBubbleSize = 70;
-const researchQuestions = [
-  { heading: "User Centric Design", text: "Why can't we make user experience fun without losing functionality or efficiency?" },
-  { heading: "Education", text: "How is the learning experience evolving with technological advances and society?" },
-  { heading: "Social Good", text: "How can we enable the public to make informed decisions on tech policy?" }
-];
+const { Engine, Runner, World, Bodies, Mouse, MouseConstraint, Events } = Matter;
+const stage = document.getElementById('bubble-stage');
+let engine, runner, walls=[];
+let domBubbles=[];
 
-// === Helpers ===
-function randomPos(radius) {
-  return {
-    x: Math.random() * (window.innerWidth - radius * 2) + radius,
-    y: Math.random() * (window.innerHeight - radius * 2) + radius
-  };
+function vw(){ return Math.max(document.documentElement.clientWidth, window.innerWidth||0); }
+function vh(){ return Math.max(document.documentElement.clientHeight, window.innerHeight||0); }
+
+function getSizes(){
+  const minSide = Math.min(vw(), vh());
+  const uniformR = Math.max(80, Math.floor(minSide * 0.12)); 
+  return { uniformR };
 }
 
-function makeBubble(svg, opts) {
-  const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-  svg.appendChild(group);
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false}){
+  const el = document.createElement('div');
+  el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''}`;
+  el.style.width = `${r*2}px`;
+  el.style.height = `${r*2}px`;
 
-  // Circle
-  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  circle.setAttribute("r", opts.r);
-  circle.setAttribute("cx", opts.x);
-  circle.setAttribute("cy", opts.y);
-  circle.setAttribute("fill", opts.fill);
-  group.appendChild(circle);
+  const wrap = document.createElement('div');
+  wrap.className = 'scaleWrap';
 
-  // Image
-  if (opts.image) {
-    const img = document.createElementNS("http://www.w3.org/2000/svg", "image");
-    img.setAttribute("href", opts.image);
-    img.setAttribute("x", opts.x - opts.r);
-    img.setAttribute("y", opts.y - opts.r);
-    img.setAttribute("width", opts.r * 2);
-    img.setAttribute("height", opts.r * 2);
-    img.setAttribute("clip-path", `circle(${opts.r}px at ${opts.x}px ${opts.y}px)`);
-    group.appendChild(img);
+  if(heading){
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute('class','heading');
+    svg.setAttribute('viewBox','0 0 100 100');
+    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+    const pathId = `arc-${Math.random().toString(36).slice(2)}`;
+    path.setAttribute('d','M10,50 A40,40 0 0,1 90,50'); // slightly lowered arc
+    path.setAttribute('id', pathId);
+    defs.appendChild(path);
+    svg.appendChild(defs);
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
+    textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
+    textPath.setAttribute('startOffset','50%');
+    textPath.setAttribute('text-anchor','middle');
+    textPath.textContent = heading;
+    text.appendChild(textPath);
+    svg.appendChild(text);
+    wrap.appendChild(svg);
   }
 
-  // Heading
-  if (opts.heading) {
-    const pathId = "path" + Math.random().toString(36).substr(2, 9);
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    const arcY = opts.y - opts.r * 0.6;
-    const arcX1 = opts.x - opts.r * 0.6;
-    const arcX2 = opts.x + opts.r * 0.6;
-    path.setAttribute("d", `M${arcX1},${arcY} A${opts.r*0.6},${opts.r*0.6} 0 0,1 ${arcX2},${arcY}`);
-    path.setAttribute("fill", "none");
-    path.setAttribute("id", pathId);
-    svg.appendChild(path);
-
-    const headingText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    headingText.setAttribute("fill", opts.textColor);
-    const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
-    textPath.setAttribute("href", `#${pathId}`);
-    textPath.setAttribute("startOffset", "50%");
-    textPath.setAttribute("text-anchor", "middle");
-    textPath.setAttribute("font-size", "14px");
-    textPath.textContent = opts.heading;
-    headingText.appendChild(textPath);
-    svg.appendChild(headingText);
+  if(content){
+    const inner = document.createElement('div');
+    inner.className = 'bubble-inner';
+    const contentBox = document.createElement('div');
+    contentBox.className = 'content';
+    contentBox.textContent = content;
+    inner.appendChild(contentBox);
+    wrap.appendChild(inner);
   }
 
-  // Content
-  if (opts.content) {
-    const contentText = document.createElementNS("http://www.w3.org/2000/svg", "text");
-    contentText.setAttribute("x", opts.x);
-    contentText.setAttribute("y", opts.y);
-    contentText.setAttribute("text-anchor", "middle");
-    contentText.setAttribute("dy", "0.35em");
-    contentText.setAttribute("font-size", "12px");
-    contentText.setAttribute("fill", opts.textColor);
-    const lines = opts.content.split("\n");
-    lines.forEach((line, i) => {
-      const tspan = document.createElementNS("http://www.w3.org/2000/svg", "tspan");
-      tspan.setAttribute("x", opts.x);
-      tspan.setAttribute("dy", i === 0 ? 0 : 14);
-      tspan.textContent = line;
-      contentText.appendChild(tspan);
+  if(type==='image' && images){
+    const current = document.createElement('div');
+    current.className='image-fill current';
+    current.style.backgroundImage = `url('${images.current}')`;
+    const child = document.createElement('div');
+    child.className='image-fill child';
+    child.style.backgroundImage = `url('${images.child}')`;
+    wrap.appendChild(current);
+    wrap.appendChild(child);
+  }
+
+  el.appendChild(wrap);
+  stage.appendChild(el);
+
+  const body = Bodies.circle(x, y, r, { restitution: 0.9, frictionAir: 0.02 });
+  World.add(engine.world, body);
+
+  domBubbles.push({ el, body, r });
+}
+
+function buildWorld(){
+  if(engine){ World.clear(engine.world, false); engine=null; }
+  stage.innerHTML='';
+  domBubbles=[];
+  engine = Engine.create();
+  engine.world.gravity.x = 0;
+  engine.world.gravity.y = 0;
+
+  const w = vw(), h = vh(), thick = 200;
+  walls = [
+    Bodies.rectangle(w/2, -thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(w/2, h+thick/2, w+thick*2, thick, { isStatic:true }),
+    Bodies.rectangle(-thick/2, h/2, thick, h+thick*2, { isStatic:true }),
+    Bodies.rectangle(w+thick/2, h/2, thick, h+thick*2, { isStatic:true })
+  ];
+  World.add(engine.world, walls);
+
+  const { uniformR } = getSizes();
+  const randPos = ()=>({ x: Math.random()*vw(), y: Math.random()*vh() });
+
+  // Main bubbles with unique vivid colors
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
+    type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-blue', textColorClass:'t-blue',
+    heading:'Education', content:'BEng X at Y\nMSc A at B\nInterested in relevant PhD opportunities', clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
+    heading:'Education+', content:'Workshops • Awards\nTeaching • Supervision\nOpen to PhD collaborations', clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-orange', textColorClass:'t-orange',
+    heading:'Experience', content:'X years of experience\nJava • Python • JavaScript\nHTML • CSS • Unity • C#', clickable:true });
+
+  makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
+    heading:'Try My Thesis Project →', content:'Play my dissertation game', clickable:true, pulse:true });
+
+  // Research sub-bubbles (clustered together)
+  const clusterX = vw()/2, clusterY = vh()/2;
+  const offsets = [[0,0],[uniformR*1.5,0],[-uniformR*1.5,0]];
+  const topics = [
+    {cls:'c-sunset t-sunset', heading:'User-Centric Design', text:"Fun UX without losing efficiency"},
+    {cls:'c-green t-green', heading:'Education', text:"Tech & learning balance"},
+    {cls:'c-blue t-blue', heading:'Social Good', text:"Tech literacy & policy"}
+  ];
+  topics.forEach((t,i)=>{
+    makeBubble({ x: clusterX+offsets[i][0], y: clusterY+offsets[i][1], r: uniformR,
+      colorClass:t.cls.split(' ')[0], textColorClass:t.cls.split(' ')[1],
+      heading:t.heading, content:t.text, clickable:true });
+  });
+
+  const mouse = Mouse.create(stage);
+  const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
+  World.add(engine.world, mouseConstraint);
+
+  if(runner) Runner.stop(runner);
+  runner = Runner.create();
+  Runner.run(runner, engine);
+
+  Events.on(engine, 'afterUpdate', ()=>{
+    domBubbles.forEach(({el, body, r})=>{
+      el.style.left = body.position.x + 'px';
+      el.style.top = body.position.y + 'px';
+      el.style.width = (r*2)+'px';
+      el.style.height= (r*2)+'px';
+      const content = el.querySelector('.content');
+      if(content){ content.style.fontSize = Math.max(12, Math.floor(r*0.14)) + 'px'; }
     });
-    group.appendChild(contentText);
-  }
-
-  return { group, circle, ...opts };
-}
-
-// === Build bubbles ===
-const svg = document.getElementById("bubbles");
-
-let usedColors = [];
-function nextColor() {
-  if (usedColors.length >= colors.length) usedColors = [];
-  let available = colors.filter(c => !usedColors.includes(c));
-  let choice = available[Math.floor(Math.random() * available.length)];
-  usedColors.push(choice);
-  return choice;
-}
-
-// Photo bubble
-const photoColor = { fill: "#fd4084", text: "#8a1240" };
-const photoBubble = makeBubble(svg, {
-  ...randomPos(bubbleSize),
-  r: bubbleSize,
-  fill: photoColor.fill,
-  textColor: photoColor.text,
-  image: "IMG_9361.jpg"
-});
-
-// Education bubble
-const eduColor = nextColor();
-makeBubble(svg, {
-  ...randomPos(bubbleSize),
-  r: bubbleSize,
-  fill: eduColor.fill,
-  textColor: eduColor.text,
-  heading: "Education",
-  content: "BEng X at Y\nMSc A at B\nInterested in PhD opportunities"
-});
-
-// Experience bubble
-const expColor = nextColor();
-makeBubble(svg, {
-  ...randomPos(bubbleSize),
-  r: bubbleSize,
-  fill: expColor.fill,
-  textColor: expColor.text,
-  heading: "Experience",
-  content: "X years of experience\nJava, Python, C#, Unity"
-});
-
-// Project bubble
-const projColor = nextColor();
-makeBubble(svg, {
-  ...randomPos(bubbleSize),
-  r: bubbleSize,
-  fill: projColor.fill,
-  textColor: projColor.text,
-  heading: "Try Project",
-  content: "My Unity dissertation project"
-});
-
-// Research bubble
-const researchColor = nextColor();
-const researchBubble = makeBubble(svg, {
-  ...randomPos(bubbleSize),
-  r: bubbleSize,
-  fill: researchColor.fill,
-  textColor: researchColor.text,
-  heading: "Technology Research Interests"
-});
-researchQuestions.forEach((q, i) => {
-  const subColor = nextColor();
-  makeBubble(svg, {
-    ...randomPos(subBubbleSize),
-    r: subBubbleSize,
-    fill: subColor.fill,
-    textColor: subColor.text,
-    heading: q.heading,
-    content: q.text
   });
+}
+
+window.addEventListener('resize', ()=>{
+  clearTimeout(window.resizeTimer);
+  window.resizeTimer = setTimeout(buildWorld, 150);
 });
 
-// === Simple bounce physics ===
-let bubbles = Array.from(svg.querySelectorAll("circle")).map(c => ({
-  el: c,
-  r: parseFloat(c.getAttribute("r")),
-  x: parseFloat(c.getAttribute("cx")),
-  y: parseFloat(c.getAttribute("cy")),
-  vx: (Math.random() - 0.5) * 1.5,
-  vy: (Math.random() - 0.5) * 1.5
-}));
-
-function tick() {
-  bubbles.forEach(b => {
-    b.x += b.vx;
-    b.y += b.vy;
-    if (b.x - b.r < 0 || b.x + b.r > window.innerWidth) b.vx *= -1;
-    if (b.y - b.r < 0 || b.y + b.r > window.innerHeight) b.vy *= -1;
-    b.el.setAttribute("cx", b.x);
-    b.el.setAttribute("cy", b.y);
-  });
-  requestAnimationFrame(tick);
-}
-tick();
+buildWorld();
 </script>
 </body>
 </html>
