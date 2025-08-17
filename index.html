@@ -96,7 +96,8 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
     //path.setAttribute('d','M10,50 A40,40 0 0,1 90,50');
     //path.setAttribute('d','M5,52 A40,40 0 0,1 95,48');
-    path.setAttribute('d','M8,55 A36,40 0 0,1 92,60');
+    //path.setAttribute('d','M8,55 A36,40 0 0,1 92,60');
+    path.setAttribute('d','M9,52 A36,39 0 0,1 91,58');
     //path.setAttribute('d','M10,50 A40,40 0 1,1 90,50');
     path.setAttribute('id', pathId);
     defs.appendChild(path);
@@ -167,10 +168,10 @@ function buildWorld(){
     type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-blue', textColorClass:'t-blue',
-    heading:'Education', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
+    heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
-    heading:'Experience', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true });
+    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
     heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true });
@@ -179,10 +180,10 @@ function buildWorld(){
     heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency?', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
-    heading:'Social Good', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true });
+    heading:'  Social Good  ', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
-    heading:'EdTech', content:'How is the learning experience evolving with technological advances and society?', clickable:true });
+    heading:'      EdTech      ', content:'How is the learning experience evolving with technological advances and society?', clickable:true });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
