@@ -94,14 +94,15 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
-    path.setAttribute('d','M10,50 A40,40 0 0,1 90,50');
+    //path.setAttribute('d','M10,50 A40,40 0 0,1 90,50');
+    path.setAttribute('d','M0,50 A40,40 0 0,1 100,50');
     path.setAttribute('id', pathId);
     defs.appendChild(path);
     svg.appendChild(defs);
     const text = document.createElementNS("http://www.w3.org/2000/svg","text");
     const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
     textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
-    //textPath.setAttribute('startOffset','50%');
+    textPath.setAttribute('startOffset','50%');
     textPath.setAttribute('text-anchor','middle');
     textPath.textContent = heading;
     text.appendChild(textPath);
