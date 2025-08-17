@@ -94,7 +94,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
-    path.setAttribute('d','M10,50 A40,40 0 1,1 90,50'); // slightly lowered arc
+    path.setAttribute('d','M20,80 A40,40 0 1,1 80,20'); // slightly lowered arc
     path.setAttribute('id', pathId);
     defs.appendChild(path);
     svg.appendChild(defs);
