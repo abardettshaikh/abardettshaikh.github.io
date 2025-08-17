@@ -101,7 +101,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const text = document.createElementNS("http://www.w3.org/2000/svg","text");
     const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
     textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
-    textPath.setAttribute('startOffset','30%');
+    //textPath.setAttribute('startOffset','50%');
     textPath.setAttribute('text-anchor','middle');
     textPath.textContent = heading;
     text.appendChild(textPath);
