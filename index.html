@@ -90,8 +90,9 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
   if(heading){
     const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
     svg.setAttribute('class','heading');
-    //svg.setAttribute('viewBox','0 0 100 100');
-    svg.setAttribute('viewBox','-10 0 120 100');
+    svg.setAttribute('viewBox','0 0 100 100');
+    //
+    svg.setAttribute('style','overflow: visible');
     const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
