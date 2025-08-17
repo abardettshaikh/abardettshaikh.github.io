@@ -31,7 +31,7 @@ header a{pointer-events:auto;color:#1a73e8;font-weight:700;text-decoration:none;
 .bubble-inner{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:8%;}
 .content{line-height:1.25;white-space:pre-wrap;word-break:break-word;max-width:80%;color:#1a1a1a;font-size:14px;}
 .heading{position:absolute;inset:0;pointer-events:none;}
-.heading text{font-weight:700;letter-spacing:.02em;font-size:12px;}
+.heading text{font-weight:700;letter-spacing:.02em;font-size:11px;}
 .image-fill{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .3s ease;}
 .image-fill.child{opacity:0;}
 .bubble.image:hover .image-fill.child{opacity:1;}
@@ -94,11 +94,8 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg","path");
     const pathId = `arc-${Math.random().toString(36).slice(2)}`;
-    //path.setAttribute('d','M10,50 A40,40 0 0,1 90,50');
-    //path.setAttribute('d','M5,52 A40,40 0 0,1 95,48');
-    //path.setAttribute('d','M8,55 A36,40 0 0,1 92,60');
-    path.setAttribute('d','M9,52 A36,39 0 0,1 91,58');
-    //path.setAttribute('d','M10,50 A40,40 0 1,1 90,50');
+    path.setAttribute('d','M10,50 A40,40 0 0,1 90,50');
+    //path.setAttribute('d','M9,52 A36,39 0 0,1 91,58');
     path.setAttribute('id', pathId);
     defs.appendChild(path);
     svg.appendChild(defs);
