@@ -138,8 +138,8 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
   World.add(engine.world, body);
   //Bubble initial velocity
   Matter.Body.setVelocity(body, { 
-    x: (Math.random() - 0.5) * 3,  // tweak the multiplier for speed
-    y: (Math.random() - 0.5) * 3
+    x: (Math.random() - 0.5) * 8,  // tweak the multiplier for speed
+    y: (Math.random() - 0.5) * 8
   });
   domBubbles.push({ el, body, r });
 }
