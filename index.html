@@ -136,7 +136,11 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
 
   const body = Bodies.circle(x, y, r, { restitution: 0.9, frictionAir: 0.02 });
   World.add(engine.world, body);
-
+  //Bubble initial velocity
+  Matter.Body.setVelocity(body, { 
+    x: (Math.random() - 0.5) * 3,  // tweak the multiplier for speed
+    y: (Math.random() - 0.5) * 3
+  });
   domBubbles.push({ el, body, r });
 }
 
