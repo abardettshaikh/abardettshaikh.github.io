@@ -37,6 +37,11 @@ header a{pointer-events:auto;color:#1a73e8;font-weight:700;text-decoration:none;
 .bubble.image:hover .image-fill.child{opacity:1;}
 .bubble.image:hover .image-fill.current{opacity:0;}
 
+  /* Research Interest styling */
+.bubble.research-interest {position: relative;}
+.research-interest-border {position: absolute;inset: -25px;pointer-events: none;z-index: 5;}
+.research-interest-border text {font-family: "Courier New", monospace;font-size: 8px;fill: #d34f00;text-anchor: middle;}
+
 /* Colour classes */
 .c-purple .scaleWrap{background:var(--purple);}
 .t-purple .heading text{fill:var(--purple-text);}
@@ -78,15 +83,59 @@ function getSizes(){
   return { uniformR };
 }
 
-function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false}){
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false,researchInterest=false,url=null}){}){
+  
   const el = document.createElement('div');
-  el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''}`;
-  el.style.width = `${r*2}px`;
+  el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''} ${researchInterest?'research-interest':''}`;  el.style.width = `${r*2}px`;
+
+  // Add click handler if URL is provided
+  if(url && clickable) {
+    el.style.cursor = 'pointer';
+    el.addEventListener('click', () => {
+      window.open(url, '_blank');
+    });
+  }
+  
   el.style.height = `${r*2}px`;
 
   const wrap = document.createElement('div');
   wrap.className = 'scaleWrap';
 
+// Add research interest border if specified
+  if(researchInterest){
+    const borderSvg = document.createElement('div');
+    borderSvg.className = 'research-interest-border';
+    
+    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
+    svg.setAttribute('viewBox','0 0 100 100');
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    
+    // Create circular path for dashes
+    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
+    const circularPath = document.createElementNS("http://www.w3.org/2000/svg","path");
+    const pathId = `dash-circle-${Math.random().toString(36).slice(2)}`;
+    circularPath.setAttribute('d','M 50,10 A 40,40 0 1,1 49.9,10'); // circular path
+    circularPath.setAttribute('id', pathId);
+    defs.appendChild(circularPath);
+    svg.appendChild(defs);
+    
+    // Add dashed text border
+    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
+    const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
+    textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
+    textPath.setAttribute('startOffset','0%');
+    
+    // Create a string of dashes that will curve around
+    const dashString = '-------Research Interest-------'.repeat(2);
+    textPath.textContent = dashString;
+    text.appendChild(textPath);
+    svg.appendChild(text);
+    
+    borderSvg.appendChild(svg);
+    el.appendChild(borderSvg);
+  }
+  
   if(heading){
     const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
     svg.setAttribute('class','heading');
@@ -172,19 +221,19 @@ function buildWorld(){
     heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
-    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true });
+    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n• VBA • SQL •', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
-    heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true });
+    heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true, url:'https://abardettshaikh.github.io/automaton_game' });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
-    heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency?', clickable:true });
+    heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency?', clickable:true, researchInterest:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
-    heading:'  Social Good  ', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true });
+    heading:'  Social Good  ', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true, researchInterest:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
-    heading:'      EdTech      ', content:'How is the learning experience evolving with technological advances and society?', clickable:true });
+    heading:'      EdTech      ', content:'How is the learning experience evolving with technological advances and society?', clickable:true, researchInterest:true });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
