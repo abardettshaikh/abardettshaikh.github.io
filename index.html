@@ -83,7 +83,7 @@ function getSizes(){
   return { uniformR };
 }
 
-function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false,researchInterest=false,url=null}){}){
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false,researchInterest=false,url=null}){
   
   const el = document.createElement('div');
   el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''} ${researchInterest?'research-interest':''}`;  el.style.width = `${r*2}px`;
