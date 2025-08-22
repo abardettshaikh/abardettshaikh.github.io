@@ -96,8 +96,8 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     svg.setAttribute("width", r * 2.8);   // give some room around bubble
     svg.setAttribute("height", r * 2.8);
     svg.style.position = "absolute";
-    svg.style.left = `${-r * 0.4}px`;     // center align around bubble
-    svg.style.top = `${-r * 0.4}px`;
+    svg.style.left = `${-r + 15}px`;     // center align around bubble
+    svg.style.top = `${-r + 15}px`;
     svg.style.overflow = "visible";       // prevent clipping
   
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
