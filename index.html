@@ -96,7 +96,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     svg.setAttribute("width", r);   // give some room around bubble
     svg.setAttribute("height", r);
     svg.style.position = "absolute";
-    svg.style.left = `${r*-1.2}px`;     // center align around bubble
+    svg.style.left = `${r*-1.3}px`;     // center align around bubble
     svg.style.top = `${0}px`;
     svg.style.overflow = "visible";       // prevent clipping
   
@@ -104,7 +104,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     const pathId = `circle-${Math.random().toString(36).slice(2)}`;
   
-    const radius = r + 8; // orbit just outside the bubble
+    const radius = r + 7; // orbit just outside the bubble
     path.setAttribute(
       "d",
       `M${r+15},${r} a${radius},${radius} 0 1,1 ${2*radius},0 a${radius},${radius} 0 1,1 -${2*radius},0`
