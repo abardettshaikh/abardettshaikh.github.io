@@ -81,7 +81,7 @@ function getSizes(){
   return { uniformR };
 }
 
-function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false}){
+function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=false,type='text',images=null,pulse=false, circleText=null}){
   const el = document.createElement('div');
   el.className = `bubble ${colorClass} ${textColorClass} ${clickable?'clickable':''} ${type==='image'?'image':''} ${pulse?'pulse':''}`;
   el.style.width = `${r*2}px`;
