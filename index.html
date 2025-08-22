@@ -197,25 +197,25 @@ function buildWorld(){
 
   // Assign each bubble a unique candy colour
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
-    type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
+    type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true, circleText=null });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-blue', textColorClass:'t-blue',
-    heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
+    heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true, circleText=null });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
-    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true });
+    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true, circleText=null });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
-    heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true });
+    heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true, circleText=null });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
-    heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency?', clickable:true });
+    heading:'User Centric Design', content:'Why can`t we make user experience fun without losing functionality or efficiency?', clickable:true, circleText='----Research Interest----' });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-mint', textColorClass:'t-mint',
-    heading:'  Social Good  ', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true });
+    heading:'  Social Good  ', content:'How can we cultivate a tech-literate society where the public makes informed policy choices?', clickable:true, circleText=null });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-purple', textColorClass:'t-purple',
-    heading:'      EdTech      ', content:'How is the learning experience evolving with technological advances and society?', clickable:true });
+    heading:'      EdTech      ', content:'How is the learning experience evolving with technological advances and society?', clickable:true, circleText=null });
 
   const mouse = Mouse.create(stage);
   const mouseConstraint = MouseConstraint.create(engine, { mouse, constraint: { stiffness: 0.2, render: { visible: false } } });
