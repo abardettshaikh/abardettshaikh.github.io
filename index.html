@@ -96,7 +96,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     svg.setAttribute("width", r);   // give some room around bubble
     svg.setAttribute("height", r);
     svg.style.position = "absolute";
-    svg.style.left = `${r*-1.2}px`;     // center align around bubble
+    svg.style.left = `${r*-1.25}px`;     // center align around bubble
     svg.style.top = `${0}px`;
     svg.style.overflow = "visible";       // prevent clipping
   
@@ -219,7 +219,7 @@ function buildWorld(){
     heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-green', textColorClass:'t-green',
-    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n • VBA • ', clickable:true });
+    heading:'    Experience    ', content:'4+ years, including\n•Java • Python•\n• JavaScript •\n• HTML • CSS •\n• Unity • C# •\n• VBA • SQL •', clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-turquoise', textColorClass:'t-turquoise',
     heading:'Play My Thesis ↓', content:'AUTOMATON, a serious game for finite automata theory', clickable:true, pulse:true });
