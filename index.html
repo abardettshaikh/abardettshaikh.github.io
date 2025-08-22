@@ -90,31 +90,47 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
   const wrap = document.createElement('div');
   wrap.className = 'scaleWrap';
 
-  if(circleText){
-    const svg = document.createElementNS("http://www.w3.org/2000/svg","svg");
-    svg.setAttribute('class','circle-text');
-    svg.setAttribute('viewBox','0 0 200 200');
-    const defs = document.createElementNS("http://www.w3.org/2000/svg","defs");
-    const path = document.createElementNS("http://www.w3.org/2000/svg","path");
+  if (circleText) {
+    const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    svg.setAttribute("class", "circle-text");
+    svg.setAttribute("width", r * 2.8);   // give some room around bubble
+    svg.setAttribute("height", r * 2.8);
+    svg.style.position = "absolute";
+    svg.style.left = `${-r * 0.4}px`;     // center align around bubble
+    svg.style.top = `${-r * 0.4}px`;
+    svg.style.overflow = "visible";       // prevent clipping
+  
+    const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
     const pathId = `circle-${Math.random().toString(36).slice(2)}`;
-    path.setAttribute('d','M100,100 m-90,0 a90,90 0 1,1 180,0 a90,90 0 1,1 -180,0');
-    path.setAttribute('id', pathId);
+  
+    const radius = r + 15; // orbit just outside the bubble
+    path.setAttribute(
+      "d",
+      `M${r+15},${r} a${radius},${radius} 0 1,1 ${2*radius},0 a${radius},${radius} 0 1,1 -${2*radius},0`
+    );
+    path.setAttribute("id", pathId);
     defs.appendChild(path);
     svg.appendChild(defs);
-
-    const text = document.createElementNS("http://www.w3.org/2000/svg","text");
-    text.setAttribute('fill','#ff7e00'); // orange
-    text.setAttribute('font-size','12');
-    text.setAttribute('font-weight','700');
-    const textPath = document.createElementNS("http://www.w3.org/2000/svg","textPath");
-    textPath.setAttributeNS('http://www.w3.org/1999/xlink','href',`#${pathId}`);
-    textPath.setAttribute('startOffset','50%');
-    textPath.setAttribute('text-anchor','middle');
+  
+    const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    text.setAttribute("fill", "#ff7e00");
+    text.setAttribute("font-size", "12");
+    text.setAttribute("font-weight", "700");
+  
+    const textPath = document.createElementNS("http://www.w3.org/2000/svg", "textPath");
+    textPath.setAttributeNS("http://www.w3.org/1999/xlink", "href", `#${pathId}`);
+    textPath.setAttribute("startOffset", "50%");
+    textPath.setAttribute("text-anchor", "middle");
     textPath.textContent = circleText;
+  
     text.appendChild(textPath);
     svg.appendChild(text);
-    wrap.appendChild(svg);
+  
+    // 👇 append outside the bubble, to its parent
+    el.appendChild(svg);
   }
+
 
 
   if(heading){
