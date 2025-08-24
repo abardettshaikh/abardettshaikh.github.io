@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/npm/matter-js@0.20.0/build/matter.min.js"></script>
 <style>
 :root{
-  /* Paler candy tones based on your palette + 3 extras */
   --purple:#a99bd4; --purple-text:#5d46bf;
   --blue:#7ecbf3; --blue-text:#007ed6;
   --green:#a6d487; --green-text:#3f9b1b;
@@ -93,12 +92,12 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
   if (circleText) {
     const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
     svg.setAttribute("class", "circle-text");
-    svg.setAttribute("width", r);   // give some room around bubble
+    svg.setAttribute("width", r);
     svg.setAttribute("height", r);
     svg.style.position = "absolute";
-    svg.style.left = `${r*-1.25}px`;     // center align around bubble
+    svg.style.left = `${r*-1.25}px`; 
     svg.style.top = `${0}px`;
-    svg.style.overflow = "visible";       // prevent clipping
+    svg.style.overflow = "visible";    
   
     const defs = document.createElementNS("http://www.w3.org/2000/svg", "defs");
     const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
@@ -127,7 +126,7 @@ function makeBubble({x,y,r,colorClass,textColorClass,heading,content,clickable=f
     text.appendChild(textPath);
     svg.appendChild(text);
   
-    // 👇 append outside the bubble, to its parent
+    // append outside the bubble, to its parent
     el.appendChild(svg);
   }
 
@@ -218,9 +217,9 @@ function buildWorld(){
   const { uniformR } = getSizes();
   const randPos = ()=>({ x: Math.random()*vw(), y: Math.random()*vh() });
 
-  // Assign each bubble a unique candy colour
+  // Assign each bubble
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-pink', textColorClass:'t-pink',
-    type:'image', images:{ current:'IMG_9361.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
+    type:'image', images:{ current:'IMG_9333.jpg', child:'IMG_5766_Original.jpg' }, clickable:true });
 
   makeBubble({ ...randPos(), r: uniformR, colorClass:'c-blue', textColorClass:'t-blue',
     heading:'     Education     ', content:'*BEng* Aerospace Engineering, QMUL\n*MSc* Computer Science, University of Bath', clickable:true });
